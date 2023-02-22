@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.AppLifecycle;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -45,10 +46,34 @@ namespace Sashimi
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
+            // NOTE: OnLaunched will always report that the ActivationKind == Launch,
+            // even when it isn't.
+            Windows.ApplicationModel.Activation.ActivationKind kind
+                = args.UWPLaunchActivatedEventArgs.Kind;
+            Debug.WriteLine($"OnLaunched: Kind={kind}");
+
+            // NOTE: AppInstance is ambiguous between
+            // Microsoft.Windows.AppLifecycle.AppInstance and
+            // Windows.ApplicationModel.AppInstance
+            var currentInstance =
+                Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent();
+            if (currentInstance != null)
+            {
+                // AppInstance.GetActivatedEventArgs will report the correct ActivationKind,
+                // even in WinUI's OnLaunched.
+                Microsoft.Windows.AppLifecycle.AppActivationArguments activationArgs
+                    = currentInstance.GetActivatedEventArgs();
+                if (activationArgs != null)
+                {
+                    Microsoft.Windows.AppLifecycle.ExtendedActivationKind extendedKind
+                        = activationArgs.Kind;
+                    Debug.WriteLine($"activationArgs.Kind={extendedKind}");
+                }
+            }
+
+            // Go ahead and do standard window initialization regardless.
             m_window = new MainWindow();
             m_window.Activate();
-
-            AppActivationArguments appActivationArguments = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
         }
 
         private Window m_window;
