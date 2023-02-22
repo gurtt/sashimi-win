@@ -8,7 +8,7 @@
 
   <Identity
     Name="c6b44f09-796e-417c-89db-0fe5f8a97b16"
-    Publisher="CN=Riley"
+    Publisher="CN=gurtt"
     Version="1.0.0.0" />
 
   <Properties>
@@ -39,6 +39,13 @@
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
+      <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="sashimi">
+            <uap:DisplayName>Sashimi</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
 
