@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Sashimi (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Sashimi (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
