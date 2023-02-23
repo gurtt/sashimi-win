@@ -31,6 +31,13 @@ namespace Sashimi
     /// </summary>
     public partial class App : Application
     {
+        private const string clTokenKey = "slack-access-token";
+        private const string client_id = "4228676926246.4237754035636";
+        private const string scope = "users.profile:write";
+        private const string teamsMonitoringPath = "~/Library/Application Support/Microsoft/Teams/storage.json";
+
+        private static SlackClient slack;
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -51,6 +58,21 @@ namespace Sashimi
             Windows.ApplicationModel.Activation.ActivationKind kind
                 = args.UWPLaunchActivatedEventArgs.Kind;
             Debug.WriteLine($"OnLaunched: Kind={kind}");
+
+            try
+            {
+                slack = new(client_id, CredentialLockerHelper.Get(clTokenKey));
+            }
+            catch
+            {
+                slack = new(client_id);
+            }
+
+            if (!slack.HasToken())
+            {
+                Debug.WriteLine("No token; triggering sign-in prompt");
+                slack.Authorise(scope);
+            }
 
             // NOTE: AppInstance is ambiguous between
             // Microsoft.Windows.AppLifecycle.AppInstance and
@@ -74,6 +96,29 @@ namespace Sashimi
             // Go ahead and do standard window initialization regardless.
             m_window = new MainWindow();
             m_window.Activate();
+        }
+
+        public static void HandleProtocolActivation(object sender, AppActivationArguments args)
+        {
+            Uri uri = ((ProtocolActivatedEventArgs)args.Data).Uri;
+
+            if ((uri.Scheme == "sashimi" && uri.LocalPath == "auth" && uri.Query.StartsWith("?token=") && uri.Query.Length > 7)) {
+                string token = uri.Query[7..];
+                try
+                {
+                    CredentialLockerHelper.Set(clTokenKey, token);
+                } catch
+                {
+                    // TODO: Handle not being able to save the key
+                }
+
+                slack.SetToken(token);
+            } else
+            {
+                // TODO: Handle bad protocol requests
+            }
+
+            // TODO: Open preferences
         }
 
         private Window m_window;

@@ -47,7 +47,7 @@ namespace Sashimi
             ExtendedActivationKind kind = args.Kind;
             if (kind == ExtendedActivationKind.Protocol)
             {
-                
+                App.HandleProtocolActivation(sender, args);
             }
         }
 
