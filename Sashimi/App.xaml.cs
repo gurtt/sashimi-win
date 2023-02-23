@@ -20,6 +20,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Storage;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -37,6 +38,7 @@ namespace Sashimi
         private const string teamsMonitoringPath = "~/Library/Application Support/Microsoft/Teams/storage.json";
 
         private static SlackClient slack;
+        private static ApplicationDataContainer localSettings;
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -73,6 +75,8 @@ namespace Sashimi
                 Debug.WriteLine("No token; triggering sign-in prompt");
                 slack.Authorise(scope);
             }
+
+            localSettings = ApplicationData.Current.LocalSettings;
 
             // NOTE: AppInstance is ambiguous between
             // Microsoft.Windows.AppLifecycle.AppInstance and
@@ -119,6 +123,18 @@ namespace Sashimi
             }
 
             // TODO: Open preferences
+        }
+
+        public static void HandleSetPreferences()
+        {
+            string defaultString = (
+                (localSettings.Values["statusEmoji"] as string) ?? "") 
+                + (localSettings.Values["statusText"] as string == "" 
+                ? " " + localSettings.Values["statusText"] 
+                : "");
+            Debug.WriteLine($"Presenting pre-filled status message \"${defaultString}\"");
+            
+            // TODO: Show modal
         }
 
         private Window m_window;
