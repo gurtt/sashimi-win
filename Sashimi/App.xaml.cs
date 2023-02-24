@@ -16,8 +16,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
+using Windows.Devices.Power;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
@@ -125,16 +128,20 @@ namespace Sashimi
             // TODO: Open preferences
         }
 
-        public static void HandleSetPreferences()
+        public static void SetPreferencesForMessage(string message)
         {
-            string defaultString = (
-                (localSettings.Values["statusEmoji"] as string) ?? "") 
-                + (localSettings.Values["statusText"] as string == "" 
-                ? " " + localSettings.Values["statusText"] 
-                : "");
-            Debug.WriteLine($"Presenting pre-filled status message \"${defaultString}\"");
-            
-            // TODO: Show modal
+            // TODO: Verify message is no more than 100 chars, emoji is valid, etc.
+
+            string emojiPattern = "^:(?i)[a-z]+:";
+            Match emojiMatch = Regex.Match(message, emojiPattern);
+
+            string statusEmoji = emojiMatch.Value;
+            string statusMessage = Regex.Replace(message, emojiPattern, String.Empty).Trim();
+
+            Debug.WriteLine($"Setting status preferences with emoji \"{statusEmoji}\" and message \"{statusMessage}\"");
+
+            localSettings.Values["statusEmoji"] = statusEmoji;
+            localSettings.Values["statusText"] = statusMessage;
         }
 
         private Window m_window;

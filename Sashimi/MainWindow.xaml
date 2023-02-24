@@ -10,7 +10,18 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Button x:Name="myButton" Click="myButton_Click">Click Me</Button>
+    <StackPanel x:Name="titleBar" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+        <!-- Content body -->
+        <TextBox 
+            x:Name="messageTextBox" 
+            Header="Add a custom emoji by typing its name between colons." 
+            PlaceholderText=":sushi: In a call" 
+            KeyDown="OnKeyDownHandler" 
+        />
+
+        <StackPanel Orientation="Horizontal">
+            <Button x:Name="saveButton" Click="SaveButton_Click">Save</Button>
+            <Button x:Name="cancelButton" Click="CancelButton_Click">Cancel</Button>
+        </StackPanel>
     </StackPanel>
 </Window>
