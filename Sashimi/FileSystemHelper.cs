@@ -19,10 +19,21 @@ namespace Sashimi
             Debug.WriteLine("Processing FileSystemWatcher event");
 
             //let data = String(data: FileManager.default.contents(atPath: event.path)!, encoding: .utf8) ?? ""
-            string data = System.IO.File.ReadAllText(e.FullPath);
+            string data = null;
+
+            while (data == null)
+            {
+               try
+                {
+                    data = System.IO.File.ReadAllText(e.FullPath);
+                } catch
+                {
+                    Debug.WriteLine("Failed to read; retrying");
+                } 
+            }
             
             //let match = try? NSRegularExpression(pattern: "(\\{\"appStates\":\\{\"states\":\")[^\"]+").firstMatch(in: data, range: NSMakeRange(0, data.count))
-            var match = Regex.Match(data, "(\\{\"appStates\":\\{\"states\":\")[^\"]+").Value;
+            var match = Regex.Match(data, "\"appStates\":{\"states\":\"[^\"]+", RegexOptions.Singleline).Value;
 
             if (match == String.Empty )
             {
