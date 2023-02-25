@@ -38,10 +38,12 @@ namespace Sashimi
         private const string clTokenKey = "slack-access-token";
         private const string client_id = "4228676926246.4237754035636";
         private const string scope = "users.profile:write";
-        private const string teamsMonitoringPath = "~/Library/Application Support/Microsoft/Teams/storage.json";
+        // TODO: Find Teams storage location on Windows
+        private const string teamsMonitoringPath = @"~/Library/Application Support/Microsoft/Teams/storage.json";
 
         private static SlackClient slack;
         private static ApplicationDataContainer localSettings;
+        private static FileSystemWatcher watcher;
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -78,6 +80,11 @@ namespace Sashimi
                 Debug.WriteLine("No token; triggering sign-in prompt");
                 slack.Authorise(scope);
             }
+
+            watcher = new FileSystemWatcher(teamsMonitoringPath);
+            watcher.Changed += FileSystemHelper.OnChanged;
+            watcher.Filter = "storage.json";
+            watcher.EnableRaisingEvents = true;
 
             localSettings = ApplicationData.Current.LocalSettings;
 
