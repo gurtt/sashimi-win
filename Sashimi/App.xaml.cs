@@ -38,8 +38,8 @@ namespace Sashimi
         private const string clTokenKey = "slack-access-token";
         private const string client_id = "4228676926246.4237754035636";
         private const string scope = "users.profile:write";
-        // TODO: Find Teams storage location on Windows
-        private const string teamsMonitoringPath = @"~/Library/Application Support/Microsoft/Teams/storage.json";
+        private string teamsMonitoringPath = System.IO.Path.Combine(Environment.GetFolderPath(
+            Environment.SpecialFolder.ApplicationData), @"Microsoft\Teams");
 
         private static SlackClient slack;
         private static ApplicationDataContainer localSettings;
