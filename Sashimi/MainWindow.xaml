@@ -10,18 +10,32 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel x:Name="titleBar" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+    <StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
         <!-- Content body -->
-        <TextBox 
-            x:Name="messageTextBox" 
-            Header="Add a custom emoji by typing its name between colons." 
-            PlaceholderText=":sushi: In a call" 
-            KeyDown="OnKeyDownHandler" 
-        />
+        <StackPanel Padding="24" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+            <InfoBar
+                x:Name="StatusInfoBar"
+                IsOpen="True"
+                IsClosable="False"
+                Message="Everything's set up."
+                Severity="Success"
+                Margin="0, 0, 0, 8">
+            </InfoBar>
+            <TextBox 
+                x:Name="messageTextBox" 
+                Header="Add a custom emoji by typing its name between colons." 
+                PlaceholderText=":sushi: In a call" 
+                KeyDown="OnKeyDownHandler" 
+            />
+        </StackPanel>
 
-        <StackPanel Orientation="Horizontal">
-            <Button x:Name="saveButton" Click="SaveButton_Click">Save</Button>
-            <Button x:Name="cancelButton" Click="CancelButton_Click">Cancel</Button>
+        <StackPanel Orientation="Horizontal" Padding="24" FlowDirection="RightToLeft" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+            
+            <Button x:Name="saveButton" Click="SaveButton_Click" Style="{StaticResource AccentButtonStyle}">Save</Button>
+                <Button x:Name="cancelButton" Click="CancelButton_Click"  Margin="8, 0, 0, 0">Cancel</Button>
+            <HyperlinkButton x:Name="signInOutButton" Click="SignInOutButton_Click" Margin="8, 0, 0, 0">Sign Out of Slack</HyperlinkButton>
+
+
         </StackPanel>
     </StackPanel>
 </Window>

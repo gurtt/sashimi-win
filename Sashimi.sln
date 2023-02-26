@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sashimi", "Sashimi\Sashimi.csproj", "{5BA0B674-4FEA-4790-9453-CFF6EC1FC892}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sashimi", "Sashimi\Sashimi.csproj", "{5BA0B674-4FEA-4790-9453-CFF6EC1FC892}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5F299EF2-7626-4898-B86F-0321156A20B2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

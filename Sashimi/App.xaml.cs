@@ -106,6 +106,8 @@ namespace Sashimi
                 }
             }
 
+            // TODO: Only show initial app window conditionally
+
             // Go ahead and do standard window initialization regardless.
             m_window = new MainWindow();
             m_window.Activate();

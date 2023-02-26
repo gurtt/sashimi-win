@@ -17,6 +17,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Graphics;
 using Windows.UI.Core;
 using Windows.System;
 
@@ -39,6 +40,8 @@ namespace Sashimi
             presenter.IsMinimizable = false;
             presenter.IsResizable = false;
             presenter.SetBorderAndTitleBar(true, false);
+
+            // TODO: Get app status and show in status bar
         }
 
         private OverlappedPresenter GetAppWindowAndPresenter()
@@ -46,6 +49,16 @@ namespace Sashimi
             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             WindowId myWndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
             var _apw = AppWindow.GetFromWindowId(myWndId);
+            _apw.Resize(new SizeInt32(500, 245));
+            DisplayArea displayArea = DisplayArea.GetFromWindowId(myWndId, DisplayAreaFallback.Nearest);
+            if (displayArea is not null)
+            {
+                var CentredPosition = _apw.Position;
+                CentredPosition.X = ((displayArea.WorkArea.Width - _apw.Size.Width) / 2);
+                CentredPosition.Y = ((displayArea.WorkArea.Height - _apw.Size.Height) / 2);
+                _apw.Move(CentredPosition);
+            }
+
             return _apw.Presenter as OverlappedPresenter;
         }
 
@@ -55,8 +68,14 @@ namespace Sashimi
             Close();
         }
 
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
+            Close();
+        }
+
+        private void SignInOutButton_Click(object sender, RoutedEventArgs e)
+        {
+            // TODO: Add sign in/out functionality
             Close();
         }
 
