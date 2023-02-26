@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Windows.ApplicationModel;
@@ -24,6 +25,8 @@ using Windows.Devices.Power;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
+using ABI.Windows.Media.Capture;
+using static SlackClient;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -38,12 +41,10 @@ namespace Sashimi
         private const string clTokenKey = "slack-access-token";
         private const string client_id = "4228676926246.4237754035636";
         private const string scope = "users.profile:write";
-        private string teamsMonitoringPath = System.IO.Path.Combine(Environment.GetFolderPath(
-            Environment.SpecialFolder.ApplicationData), @"Microsoft\Teams");
 
         private static SlackClient slack;
         private static ApplicationDataContainer localSettings;
-        private static FileSystemWatcher watcher;
+        private TeamsAppEventWatcher teams;
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -81,10 +82,8 @@ namespace Sashimi
                 slack.Authorise(scope);
             }
 
-            watcher = new FileSystemWatcher(teamsMonitoringPath);
-            watcher.Changed += FileSystemHelper.OnChanged;
-            watcher.Filter = "storage.json";
-            watcher.EnableRaisingEvents = true;
+            teams = new TeamsAppEventWatcher();
+            teams.CallStateChanged += HandleCallStateChanged;
 
             localSettings = ApplicationData.Current.LocalSettings;
 
@@ -133,6 +132,36 @@ namespace Sashimi
             }
 
             // TODO: Open preferences
+        }
+
+        private static void HandleCallStateChanged(object sender, CallStateChangedEventArgs e)
+        {
+            switch (e.State)
+            {
+                case CallState.InCall:
+                    slack.SetStatus(
+                            (localSettings.Values["statusEmoji"] == null && localSettings.Values["statusText"] == null)
+                                ? new SlackStatus
+                            {
+                                status_emoji = ":sushi:", 
+                                status_text = "In a call"
+                            }
+                                : new SlackStatus 
+                            {
+                                status_emoji = (string)localSettings.Values["statusEmoji"],
+                                status_text = (string)localSettings.Values["statusText"]
+                            }
+                    );
+                    break;
+
+                case CallState.CallEnded:
+                    slack.ClearStatus();
+                    break;
+
+                default:
+                    Debug.Fail($"Unexpected call state\"{e.State}\"");
+                    break;
+            }
         }
 
         public static void SetPreferencesForMessage(string message)
