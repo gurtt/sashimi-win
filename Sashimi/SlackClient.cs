@@ -53,7 +53,7 @@ public class SlackClient
     /// <param name="scope">The Slack scopes to request access to.</param>
 	public async void Authorise(string scope)
 	{
-        Uri uri = new($"https://slack.com/oauth/authorize?client_id=${clientId}&scope=${scope}");
+        Uri uri = new($"https://slack.com/oauth/authorize?client_id={clientId}&scope={scope}");
         await Windows.System.Launcher.LaunchUriAsync(uri);
     }
 
