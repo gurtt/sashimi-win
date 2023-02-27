@@ -142,17 +142,17 @@ namespace Sashimi
             {
                 case CallState.InCall:
                     slack.SetStatus(
-                            (localSettings.Values["statusEmoji"] == null && localSettings.Values["statusText"] == null)
+                            ((string)localSettings.Values["statusEmoji"] == string.Empty && (string)localSettings.Values["statusText"] == string.Empty)
                                 ? new SlackStatus
-                            {
-                                status_emoji = ":sushi:", 
-                                status_text = "In a call"
-                            }
+                            (
+                                ":sushi:", 
+                                "In a call"
+                            )
                                 : new SlackStatus 
-                            {
-                                status_emoji = (string)localSettings.Values["statusEmoji"],
-                                status_text = (string)localSettings.Values["statusText"]
-                            }
+                            (
+                                (string)localSettings.Values["statusEmoji"],
+                                (string)localSettings.Values["statusText"]
+                            )
                     );
                     break;
 

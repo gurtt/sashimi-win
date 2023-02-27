@@ -79,6 +79,7 @@ namespace Sashimi
                     return;
                 }
 
+                Debug.WriteLine($"Raising event for state change to \"{lastEvent}\"");
                 OnRaiseCallStateChanged(new CallStateChangedEventArgs(lastEvent));
                 _previousCallState = lastEvent;
                 return;

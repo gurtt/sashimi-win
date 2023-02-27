@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using Windows.Storage.Streams;
 using Windows.Web.Http;
@@ -8,17 +9,28 @@ public class SlackClient
 {
 	public struct SlackStatus
 	{
-        #pragma warning disable IDE1006
-        public string status_emoji;
-        public int status_expiration;
-        public string status_text;
-        #pragma warning restore IDE1006
+
+        public SlackStatus(string statusEmoji, string statusText)
+        {
+            status_emoji = statusEmoji;
+            status_text = statusText;
+        }
+
+#pragma warning disable IDE1006
+        public string status_emoji { get; set; }
+        public int status_expiration { get; set; } = 0;
+        public string status_text { get; set; }
+#pragma warning restore IDE1006
     }
 
     public struct SlackProfile
 	{
-        public SlackStatus profile;
-	}
+        public SlackProfile(SlackStatus status)
+        {
+            profile = status;
+        }
+        public SlackStatus profile { get; set; }
+    }
 
 	private readonly string clientId;
 	private string token;
@@ -64,22 +76,17 @@ public class SlackClient
     /// <param name="text">The text to set the status to.</param>
     public async void SetStatus(SlackStatus status)
     {
-        try
-        {
             Uri uri = new("https://slack.com/api/users.profile.set");
 
-            HttpStringContent request = new(JsonSerializer.Serialize(new SlackProfile {  profile = status }));
+        HttpStringContent request = new(JsonSerializer.Serialize(new SlackProfile(status)));
             request.Headers["Content-type"] = "application/json; charset=utf-8";
-            request.Headers["Authorization"] = $"Bearer ${token}";
 
             HttpClient httpClient = new HttpClient();
-            HttpResponseMessage httpResponseMessage = await httpClient.PostAsync(uri, request);
+        httpClient.DefaultRequestHeaders.Authorization = new("Bearer", token);
+        HttpResponseMessage httpResponseMessage = await httpClient.PostAsync(uri, request);
             httpResponseMessage.EnsureSuccessStatusCode();
 
-        } catch (Exception ex)
-        {
-            Debug.WriteLine(ex);
-        }
+        
     }
 
     /// <summary>
