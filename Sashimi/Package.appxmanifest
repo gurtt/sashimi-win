@@ -10,7 +10,7 @@
   <Identity
     Name="c6b44f09-796e-417c-89db-0fe5f8a97b16"
     Publisher="CN=gurtt"
-    Version="1.0.0.0" />
+    Version="0.1.2.0" />
 
   <Properties>
     <DisplayName>Sashimi</DisplayName>
@@ -48,7 +48,6 @@
         </uap:Extension>
 	      <desktop:Extension
 		      Category="windows.startupTask"
-		      Executable="MyDesktopApp.exe"
 		      EntryPoint="Windows.FullTrustApplication">
 			  <desktop:StartupTask
 			      TaskId="SashimiTask"
