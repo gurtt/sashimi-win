@@ -222,7 +222,7 @@ namespace Sashimi
                     shouldHandleCopiedToken = false;
 
                     // The window is on another thread; marhsal to UI thread via dispatcher
-                    m_window.DispatcherQueue.TryEnqueue(() => { m_window.Activate(); m_window.ShowSignedInViaClipboardMessage(); });
+                    m_window.DispatcherQueue.TryEnqueue(() => { m_window.Activate(); m_window.NotifyAuthStatusChanged(); m_window.ShowSignedInViaClipboardMessage(); });
                 }
             }
         }

@@ -23,6 +23,8 @@ using Windows.System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Windows.UI.WindowManagement;
+using WindowActivatedEventArgs = Windows.UI.Core.WindowActivatedEventArgs;
+using System.Runtime.InteropServices;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -54,6 +56,14 @@ namespace Sashimi
             {
                 e.Handled = true;
                 _apw.Hide();
+            };
+
+            [DllImport("user32.dll")]
+            static extern bool SetForegroundWindow(IntPtr hWnd);
+
+            Activated += (object sender, Microsoft.UI.Xaml.WindowActivatedEventArgs e) =>
+            {
+               SetForegroundWindow(hWnd);
             };
         }
 
