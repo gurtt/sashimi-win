@@ -33,7 +33,7 @@
             
             <Button x:Name="saveButton" Click="SaveButton_Click" Style="{StaticResource AccentButtonStyle}">Save</Button>
                 <Button x:Name="cancelButton" Click="CancelButton_Click"  Margin="8, 0, 0, 0">Cancel</Button>
-            <HyperlinkButton x:Name="signInOutButton" Click="SignInOutButton_Click" Margin="8, 0, 0, 0">Sign Out of Slack</HyperlinkButton>
+            <HyperlinkButton Content="{x:Bind SignInOutButtonText()}" x:Name="signInOutButton" Click="SignInOutButton_Click" Margin="8, 0, 0, 0" />
 
 
         </StackPanel>

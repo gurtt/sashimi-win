@@ -76,12 +76,6 @@ namespace Sashimi
                 slack = new(client_id);
             }
 
-            if (!slack.HasToken())
-            {
-                Debug.WriteLine("No token; triggering sign-in prompt");
-                slack.Authorise(scope);
-            }
-
             teams = new TeamsAppEventWatcher();
             teams.CallStateChanged += HandleCallStateChanged;
 
@@ -106,12 +100,28 @@ namespace Sashimi
                 }
             }
 
-            // TODO: Only show initial app window conditionally
-
-            // Go ahead and do standard window initialization regardless.
             m_window = new MainWindow();
-            m_window.Activate();
+
+            if (slack.HasToken())
+                m_window.Activate();
+            else
+            {
+                Debug.WriteLine("No token; triggering sign-in prompt");
+                slack.Authorise(scope);
+            }
         }
+
+        public static void SignIn()
+        {
+            slack.Authorise(scope);
+        }
+
+        public static void SignOut()
+        {
+            slack.SetToken(null);
+        }
+
+        public static bool IsSignedIn() => slack.HasToken();
 
         public static void HandleProtocolActivation(object sender, AppActivationArguments args)
         {

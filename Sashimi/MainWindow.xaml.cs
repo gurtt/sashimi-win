@@ -62,6 +62,8 @@ namespace Sashimi
             return _apw.Presenter as OverlappedPresenter;
         }
 
+        private string SignInOutButtonText() => $"Sign {(App.IsSignedIn() ? "Out of" : "In to")} Slack";
+
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             App.SetPreferencesForMessage(this.messageTextBox.Text);
@@ -75,8 +77,10 @@ namespace Sashimi
 
         private void SignInOutButton_Click(object sender, RoutedEventArgs e)
         {
-            // TODO: Add sign in/out functionality
-            Close();
+            if (App.IsSignedIn()) 
+                App.SignOut(); 
+            else
+                App.SignIn();
         }
 
         private void OnKeyDownHandler(object sender, KeyRoutedEventArgs e)
