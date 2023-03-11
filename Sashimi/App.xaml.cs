@@ -119,6 +119,14 @@ namespace Sashimi
         public static void SignOut()
         {
             slack.SetToken(null);
+            try
+            {
+                CredentialLockerHelper.Remove(clTokenKey);
+            }
+            catch
+            {
+                // TODO: Handle not being able to remove the key
+            }
         }
 
         public static bool IsSignedIn() => slack.HasToken();
