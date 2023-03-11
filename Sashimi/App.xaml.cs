@@ -28,6 +28,7 @@ using Windows.Storage;
 using ABI.Windows.Media.Capture;
 using static SlackClient;
 using Windows.UI.Core;
+using Windows.ApplicationModel.DataTransfer;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -46,6 +47,8 @@ namespace Sashimi
         private static SlackClient slack;
         private static ApplicationDataContainer localSettings;
         private TeamsAppEventWatcher teams;
+
+        private static bool shouldHandleCopiedToken;
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -101,12 +104,14 @@ namespace Sashimi
                 }
             }
 
+            Clipboard.ContentChanged += HandleClipboardContentChanged;
+
             m_window = new MainWindow();
 
             if (!slack.HasToken)
             {
                 Debug.WriteLine("No token; triggering sign-in prompt");
-                slack.Authorise(scope);
+                SignIn();
             }
 
             Debug.WriteLine("Ready");
@@ -115,6 +120,7 @@ namespace Sashimi
         public static void SignIn()
         {
             slack.Authorise(scope);
+            shouldHandleCopiedToken = true;
         }
 
         public static void SignOut()
@@ -152,6 +158,7 @@ namespace Sashimi
                 }
 
                 slack.SetToken(token);
+                shouldHandleCopiedToken = false;
 
                 // The window is on another thread; marhsal to UI thread via dispatcher
                 m_window.DispatcherQueue.TryEnqueue(() => { m_window.NotifyAuthStatusChanged(); m_window.Activate(); });
@@ -188,6 +195,35 @@ namespace Sashimi
                 default:
                     Debug.Fail($"Unexpected call state\"{e.State}\"");
                     break;
+            }
+        }
+
+        private static async void HandleClipboardContentChanged(object sender, object e)
+        {
+            if (!shouldHandleCopiedToken) return;
+
+            DataPackageView dataPackageView = Clipboard.GetContent();
+            if (dataPackageView.Contains(StandardDataFormats.Text))
+            {
+                String text = await dataPackageView.GetTextAsync();
+
+                if (text.StartsWith("xoxp-") && text.Length > 5) // TODO: Check if the token actually works
+                {
+                    try
+                    {
+                        CredentialLockerHelper.Set(clTokenKey, text);
+                    }
+                    catch
+                    {
+                        // TODO: Handle not being able to save the key
+                    }
+
+                    slack.SetToken(text);
+                    shouldHandleCopiedToken = false;
+
+                    // The window is on another thread; marhsal to UI thread via dispatcher
+                    m_window.DispatcherQueue.TryEnqueue(() => { m_window.Activate(); m_window.ShowSignedInViaClipboardMessage(); });
+                }
             }
         }
 

@@ -77,6 +77,19 @@ namespace Sashimi
 
         public void NotifyAuthStatusChanged() => signInOutButton.Content = $"Sign {(App.IsSignedIn ? "Out of" : "In to")} Slack";
 
+        public async void ShowSignedInViaClipboardMessage()
+        {
+            ContentDialog cd = new ContentDialog()
+            {
+                Title = "Signed in to Slack",
+                Content = "We got the token you copied to the clipboard.",
+                CloseButtonText = "Ok",
+                XamlRoot = Content.XamlRoot
+            };
+            await cd.ShowAsync();
+
+        }
+
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             App.SetPreferencesForMessage(this.messageTextBox.Text);
