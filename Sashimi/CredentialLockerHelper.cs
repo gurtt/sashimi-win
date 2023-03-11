@@ -1,10 +1,12 @@
 ﻿using System;
 using Windows.Security.Credentials;
 
-public class CredentialLockerHelper
+namespace Sashimi;
+
+public static class CredentialLockerHelper
 {
-    private static readonly string resource = "Sashimi";
-    private static readonly PasswordVault vault = new();
+    private const string Resource = "Sashimi";
+    private static readonly PasswordVault Vault = new();
 
     /// <summary>
     /// Stores the string in the credential locker under the given key.
@@ -14,7 +16,7 @@ public class CredentialLockerHelper
     /// <exception cref="Exception">If the item isn't added successfully.</exception>
     public static void Set(string key, string value)
     {
-        vault.Add(new PasswordCredential(resource, key, value));
+        Vault.Add(new PasswordCredential(Resource, key, value));
     }
 
     /// <summary>
@@ -24,7 +26,7 @@ public class CredentialLockerHelper
     /// <exception cref="Exception">If the item isn't retrieved successfully.</exception>
     public static string Get(string key)
     {
-        PasswordCredential credential = vault.Retrieve(resource, key);
+        var credential = Vault.Retrieve(Resource, key);
         credential.RetrievePassword();
         return credential.Password;
     }
@@ -37,8 +39,8 @@ public class CredentialLockerHelper
     /// 
     public static void Remove(string key)
     {
-        PasswordCredential credential = vault.Retrieve(resource, key);
-        vault.Remove(credential);
+        var credential = Vault.Retrieve(Resource, key);
+        Vault.Remove(credential);
     }
 
 }

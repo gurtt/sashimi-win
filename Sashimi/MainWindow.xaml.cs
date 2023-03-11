@@ -1,30 +1,16 @@
 // Copyright (c) Microsoft Corporation and Contributors.
 // Licensed under the MIT License.
 
-using Microsoft.UI.Windowing;
+using System;
+using System.Runtime.InteropServices;
+using Windows.Graphics;
+using Windows.System;
 using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.Graphics;
-using Windows.UI.Core;
-using Windows.System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using Windows.UI.WindowManagement;
-using WindowActivatedEventArgs = Windows.UI.Core.WindowActivatedEventArgs;
-using System.Runtime.InteropServices;
+using WinRT.Interop;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -34,11 +20,11 @@ namespace Sashimi
     /// <summary>
     /// An empty window that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         public MainWindow()
         {
-            this.InitializeComponent();
+            InitializeComponent();
 
             var presenter = GetAppWindowAndPresenter();
             presenter.IsMaximizable = false;
@@ -48,20 +34,20 @@ namespace Sashimi
 
             NotifyAuthStatusChanged();
 
-            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            WindowId myWndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
-            var _apw = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(myWndId);
+            var hWnd = WindowNative.GetWindowHandle(this);
+            var myWndId = Win32Interop.GetWindowIdFromWindow(hWnd);
+            var apw = AppWindow.GetFromWindowId(myWndId);
 
-            Closed += (object sender, WindowEventArgs e) =>
+            Closed += (_, e) =>
             {
                 e.Handled = true;
-                _apw.Hide();
+                apw.Hide();
             };
 
             [DllImport("user32.dll")]
             static extern bool SetForegroundWindow(IntPtr hWnd);
 
-            Activated += (object sender, Microsoft.UI.Xaml.WindowActivatedEventArgs e) =>
+            Activated += (_, _) =>
             {
                SetForegroundWindow(hWnd);
             };
@@ -69,27 +55,27 @@ namespace Sashimi
 
         private OverlappedPresenter GetAppWindowAndPresenter()
         {
-            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            WindowId myWndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
-            var _apw = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(myWndId);
-            _apw.Resize(new SizeInt32(500, 245));
-            DisplayArea displayArea = DisplayArea.GetFromWindowId(myWndId, DisplayAreaFallback.Nearest);
+            var hWnd = WindowNative.GetWindowHandle(this);
+            var myWndId = Win32Interop.GetWindowIdFromWindow(hWnd);
+            var apw = AppWindow.GetFromWindowId(myWndId);
+            apw.Resize(new SizeInt32(500, 245));
+            var displayArea = DisplayArea.GetFromWindowId(myWndId, DisplayAreaFallback.Nearest);
             if (displayArea is not null)
             {
-                var CentredPosition = _apw.Position;
-                CentredPosition.X = ((displayArea.WorkArea.Width - _apw.Size.Width) / 2);
-                CentredPosition.Y = ((displayArea.WorkArea.Height - _apw.Size.Height) / 2);
-                _apw.Move(CentredPosition);
+                var centredPosition = apw.Position;
+                centredPosition.X = (displayArea.WorkArea.Width - apw.Size.Width) / 2;
+                centredPosition.Y = (displayArea.WorkArea.Height - apw.Size.Height) / 2;
+                apw.Move(centredPosition);
             }
 
-            return _apw.Presenter as OverlappedPresenter;
+            return apw.Presenter as OverlappedPresenter;
         }
 
-        public void NotifyAuthStatusChanged() => signInOutButton.Content = $"Sign {(App.IsSignedIn ? "Out of" : "In to")} Slack";
+        public void NotifyAuthStatusChanged() => SignInOutButton.Content = $"Sign {(App.IsSignedIn ? "Out of" : "In to")} Slack";
 
         public async void ShowSignedInViaClipboardMessage()
         {
-            ContentDialog cd = new ContentDialog()
+            ContentDialog cd = new()
             {
                 Title = "Signed in to Slack",
                 Content = "We got the token you copied to the clipboard.",
@@ -102,11 +88,11 @@ namespace Sashimi
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            App.SetPreferencesForMessage(this.messageTextBox.Text);
+            App.SetPreferencesForMessage(this.MessageTextBox.Text);
             Close();
         }
 
-        private async void CancelButton_Click(object sender, RoutedEventArgs e)
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
         }
@@ -121,7 +107,7 @@ namespace Sashimi
 
         private void OnKeyDownHandler(object sender, KeyRoutedEventArgs e)
         {
-            if (e.Key == VirtualKey.Enter) SaveButton_Click(sender, new());
+            if (e.Key == VirtualKey.Enter) SaveButton_Click(sender, new RoutedEventArgs());
         }
     }
 }

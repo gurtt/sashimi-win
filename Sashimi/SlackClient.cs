@@ -1,14 +1,16 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Net.Http.Headers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using Windows.Storage.Streams;
+using Windows.System;
 using Windows.Web.Http;
+using Windows.Web.Http.Headers;
+
+namespace Sashimi;
 
 public class SlackClient
 {
-	public struct SlackStatus
-	{
+    public struct SlackStatus
+    {
 
         public SlackStatus(string statusEmoji, string statusText)
         {
@@ -16,54 +18,51 @@ public class SlackClient
             status_text = statusText;
         }
 
-#pragma warning disable IDE1006
+        #pragma warning disable IDE1006
         public string status_emoji { get; set; }
         public int status_expiration { get; set; } = 0;
         public string status_text { get; set; }
-#pragma warning restore IDE1006
+        #pragma warning restore IDE1006
     }
 
-    public struct SlackProfile
-	{
+    private struct SlackProfile
+    {
         public SlackProfile(SlackStatus status)
         {
             profile = status;
         }
-        public SlackStatus profile { get; set; }
+
+        private SlackStatus profile { get; set; }
     }
 
-	private readonly string clientId;
-	private string token;
+    private readonly string _clientId;
+    private string _token;
 
-	public SlackClient(string clientId, string token = null)
-	{
-		this.clientId = clientId;
-		this.token = token;
-	}
+    public SlackClient(string clientId, string token = null)
+    {
+        _clientId = clientId;
+        _token = token;
+    }
 
     /// <summary>
     /// Sets the token to use for API requests.
     /// </summary>
     /// <param name="token">The token to use.</param>
     public void SetToken(string token)
-	{
-		this.token = token;
-	}
+    {
+        _token = token;
+    }
 
-    /// <summary>
-    /// Checks if the client has an access token.
-    /// </summary>
-    /// <returns>Wether or not the client has an access token.</param>
-	public bool HasToken => token != null;
+    public bool HasToken => _token != null;
 
     /// <summary>
     /// Opens a browser to request an authorisation code from Slack.
     /// </summary>
     /// <param name="scope">The Slack scopes to request access to.</param>
-	public async void Authorise(string scope)
-	{
-        Uri uri = new($"https://slack.com/oauth/authorize?client_id={clientId}&scope={scope}");
-        await Windows.System.Launcher.LaunchUriAsync(uri);
+    public async void Authorise(string scope)
+    {
+        Uri uri = new($"https://slack.com/oauth/authorize?client_id={_clientId}&scope={scope}");
+        await Launcher.LaunchUriAsync(uri);
     }
 
     /// <summary>
@@ -73,15 +72,15 @@ public class SlackClient
     /// <param name="text">The text to set the status to.</param>
     public async void SetStatus(SlackStatus status)
     {
-            Uri uri = new("https://slack.com/api/users.profile.set");
+        Uri uri = new("https://slack.com/api/users.profile.set");
 
         HttpStringContent request = new(JsonSerializer.Serialize(new SlackProfile(status)));
-            request.Headers["Content-type"] = "application/json; charset=utf-8";
+        request.Headers["Content-type"] = "application/json; charset=utf-8";
 
-            HttpClient httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new("Bearer", token);
-        HttpResponseMessage httpResponseMessage = await httpClient.PostAsync(uri, request);
-            httpResponseMessage.EnsureSuccessStatusCode();
+        HttpClient httpClient = new();
+        httpClient.DefaultRequestHeaders.Authorization = new HttpCredentialsHeaderValue("Bearer", _token);
+        var httpResponseMessage = await httpClient.PostAsync(uri, request);
+        httpResponseMessage.EnsureSuccessStatusCode();
 
         
     }

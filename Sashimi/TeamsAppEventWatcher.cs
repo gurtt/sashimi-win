@@ -25,7 +25,7 @@ namespace Sashimi
     /// <summary>
     /// Watches Team's analytics store and raises events when the state of the app changes.
     /// </summary>
-    internal class TeamsAppEventWatcher
+    internal sealed class TeamsAppEventWatcher
     {
         private static readonly string TeamsMonitoringPath = Path.Combine(Environment.GetFolderPath(
             Environment.SpecialFolder.ApplicationData), @"Microsoft\Teams");
@@ -95,12 +95,12 @@ namespace Sashimi
 
         // Wrap event invocations inside a protected virtual method
         // to allow derived classes to override the event invocation behavior
-        protected virtual void OnRaiseCallStateChanged(CallStateChangedEventArgs e)
+        private void OnRaiseCallStateChanged(CallStateChangedEventArgs e)
         {
             // Make a temporary copy of the event to avoid possibility of
             // a race condition if the last subscriber unsubscribes
             // immediately after the null check and before the event is raised.
-            EventHandler<CallStateChangedEventArgs> raiseEvent = CallStateChanged;
+            var raiseEvent = CallStateChanged;
 
             // Event will be null if there are no subscribers
             raiseEvent?.Invoke(this, e);

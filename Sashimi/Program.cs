@@ -1,15 +1,10 @@
-﻿using Microsoft.UI.Dispatching;
-using Microsoft.Windows.AppLifecycle;
-using Sashimi;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.Activation;
-using Windows.Storage;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using Microsoft.Windows.AppLifecycle;
+using WinRT;
 
 namespace Sashimi
 {
@@ -27,12 +22,12 @@ namespace Sashimi
         [STAThread]
         static void Main(string[] args)
         {
-            WinRT.ComWrappersSupport.InitializeComWrappers();
+            ComWrappersSupport.InitializeComWrappers();
 
-            bool isRedirect = DecideRedirection();
+            var isRedirect = DecideRedirection();
             if (!isRedirect)
             {
-                Microsoft.UI.Xaml.Application.Start((p) =>
+                Application.Start(p =>
                 {
                     var context = new DispatcherQueueSynchronizationContext(
                         DispatcherQueue.GetForCurrentThread());
@@ -44,23 +39,23 @@ namespace Sashimi
 
         private static void OnActivated(object sender, AppActivationArguments args)
         {
-            ExtendedActivationKind kind = args.Kind;
+            var kind = args.Kind;
             if (kind == ExtendedActivationKind.Protocol)
             {
-                App.HandleProtocolActivation(sender, args);
+                App.HandleProtocolActivation(args);
             }
             else
             {
-                App.HandleOtherActivation(sender, args);
+                App.HandleOtherActivation();
             }
         }
 
         private static bool DecideRedirection()
         {
-            bool isRedirect = false;
+            var isRedirect = false;
 
-            AppActivationArguments args = AppInstance.GetCurrent().GetActivatedEventArgs();
-            AppInstance keyInstance = AppInstance.FindOrRegisterForKey("sashimi");
+            var args = AppInstance.GetCurrent().GetActivatedEventArgs();
+            var keyInstance = AppInstance.FindOrRegisterForKey("sashimi");
 
             if (keyInstance.IsCurrent)
             {
@@ -77,11 +72,9 @@ namespace Sashimi
             return isRedirect;
         }
 
-        private static IntPtr redirectEventHandle = IntPtr.Zero;
-
         // Do the redirection on another thread, and use a non-blocking
         // wait method to wait for the redirection to complete.
-        public static void RedirectActivationTo(
+        private static void RedirectActivationTo(
             AppActivationArguments args, AppInstance keyInstance)
         {
             var redirectSemaphore = new Semaphore(0, 1);

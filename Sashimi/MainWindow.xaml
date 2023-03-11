@@ -14,7 +14,7 @@
         <!-- Content body -->
         <StackPanel Padding="24" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
             <TextBox 
-                x:Name="messageTextBox" 
+                x:Name="MessageTextBox" 
                 Header="Add a custom emoji by typing its name between colons." 
                 PlaceholderText=":sushi: In a call" 
                 KeyDown="OnKeyDownHandler" 
@@ -22,12 +22,9 @@
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Padding="24" FlowDirection="RightToLeft" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-            
-            <Button x:Name="saveButton" Click="SaveButton_Click" Style="{StaticResource AccentButtonStyle}">Save</Button>
-                <Button x:Name="cancelButton" Click="CancelButton_Click"  Margin="8, 0, 0, 0">Cancel</Button>
-            <HyperlinkButton x:Name="signInOutButton" Click="SignInOutButton_Click" Margin="8, 0, 0, 0" />
-
-
+            <Button Click="SaveButton_Click" Style="{StaticResource AccentButtonStyle}">Save</Button>
+            <Button Click="CancelButton_Click"  Margin="8, 0, 0, 0">Cancel</Button>
+            <HyperlinkButton x:Name="SignInOutButton" Click="SignInOutButton_Click" Margin="8, 0, 0, 0" />
         </StackPanel>
     </StackPanel>
 </Window>
