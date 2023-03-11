@@ -54,10 +54,7 @@ public class SlackClient
     /// Checks if the client has an access token.
     /// </summary>
     /// <returns>Wether or not the client has an access token.</param>
-	public bool HasToken()
-	{
-		return token != null;
-	}
+	public bool HasToken => token != null;
 
     /// <summary>
     /// Opens a browser to request an authorisation code from Slack.

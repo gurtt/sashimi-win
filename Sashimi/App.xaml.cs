@@ -27,6 +27,7 @@ using Windows.Foundation.Collections;
 using Windows.Storage;
 using ABI.Windows.Media.Capture;
 using static SlackClient;
+using Windows.UI.Core;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -102,13 +103,13 @@ namespace Sashimi
 
             m_window = new MainWindow();
 
-            if (slack.HasToken())
-                m_window.Activate();
-            else
+            if (!slack.HasToken)
             {
                 Debug.WriteLine("No token; triggering sign-in prompt");
                 slack.Authorise(scope);
             }
+
+            Debug.WriteLine("Ready");
         }
 
         public static void SignIn()
@@ -118,7 +119,6 @@ namespace Sashimi
 
         public static void SignOut()
         {
-            slack.SetToken(null);
             try
             {
                 CredentialLockerHelper.Remove(clTokenKey);
@@ -127,10 +127,16 @@ namespace Sashimi
             {
                 // TODO: Handle not being able to remove the key
             }
+
+            slack.SetToken(null);
+            m_window.NotifyAuthStatusChanged();
         }
 
-        public static bool IsSignedIn() => slack.HasToken();
+        public static bool IsSignedIn => slack.HasToken;
 
+        // The window is on another thread; marhsal to UI thread via dispatcher
+        public static void HandleOtherActivation(object sender, AppActivationArguments args) =>
+            m_window.DispatcherQueue.TryEnqueue(() => { m_window.Activate(); });
         public static void HandleProtocolActivation(object sender, AppActivationArguments args)
         {
             Uri uri = ((ProtocolActivatedEventArgs)args.Data).Uri;
@@ -146,12 +152,13 @@ namespace Sashimi
                 }
 
                 slack.SetToken(token);
+
+                // The window is on another thread; marhsal to UI thread via dispatcher
+                m_window.DispatcherQueue.TryEnqueue(() => { m_window.NotifyAuthStatusChanged(); m_window.Activate(); });
             } else
             {
                 // TODO: Handle bad protocol requests
             }
-
-            // TODO: Open preferences
         }
 
         private static void HandleCallStateChanged(object sender, CallStateChangedEventArgs e)
@@ -200,6 +207,6 @@ namespace Sashimi
             localSettings.Values["statusText"] = statusMessage;
         }
 
-        private Window m_window;
+        static MainWindow m_window;
     }
 }

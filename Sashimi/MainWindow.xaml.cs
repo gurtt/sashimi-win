@@ -20,6 +20,9 @@ using Windows.Foundation.Collections;
 using Windows.Graphics;
 using Windows.UI.Core;
 using Windows.System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using Windows.UI.WindowManagement;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -29,7 +32,7 @@ namespace Sashimi
     /// <summary>
     /// An empty window that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class MainWindow : Window
+    public partial class MainWindow : Window
     {
         public MainWindow()
         {
@@ -41,14 +44,24 @@ namespace Sashimi
             presenter.IsResizable = false;
             presenter.SetBorderAndTitleBar(true, false);
 
-            // TODO: Get app status and show in status bar
+            NotifyAuthStatusChanged();
+
+            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            WindowId myWndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
+            var _apw = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(myWndId);
+
+            Closed += (object sender, WindowEventArgs e) =>
+            {
+                e.Handled = true;
+                _apw.Hide();
+            };
         }
 
         private OverlappedPresenter GetAppWindowAndPresenter()
         {
             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             WindowId myWndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
-            var _apw = AppWindow.GetFromWindowId(myWndId);
+            var _apw = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(myWndId);
             _apw.Resize(new SizeInt32(500, 245));
             DisplayArea displayArea = DisplayArea.GetFromWindowId(myWndId, DisplayAreaFallback.Nearest);
             if (displayArea is not null)
@@ -62,7 +75,7 @@ namespace Sashimi
             return _apw.Presenter as OverlappedPresenter;
         }
 
-        private string SignInOutButtonText() => $"Sign {(App.IsSignedIn() ? "Out of" : "In to")} Slack";
+        public void NotifyAuthStatusChanged() => signInOutButton.Content = $"Sign {(App.IsSignedIn ? "Out of" : "In to")} Slack";
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
@@ -77,8 +90,8 @@ namespace Sashimi
 
         private void SignInOutButton_Click(object sender, RoutedEventArgs e)
         {
-            if (App.IsSignedIn()) 
-                App.SignOut(); 
+            if (App.IsSignedIn)
+                App.SignOut();
             else
                 App.SignIn();
         }

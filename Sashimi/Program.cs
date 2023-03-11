@@ -49,6 +49,10 @@ namespace Sashimi
             {
                 App.HandleProtocolActivation(sender, args);
             }
+            else
+            {
+                App.HandleOtherActivation(sender, args);
+            }
         }
 
         private static bool DecideRedirection()

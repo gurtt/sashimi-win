@@ -13,14 +13,6 @@
     <StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
         <!-- Content body -->
         <StackPanel Padding="24" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-            <InfoBar
-                x:Name="StatusInfoBar"
-                IsOpen="True"
-                IsClosable="False"
-                Message="Everything's set up."
-                Severity="Success"
-                Margin="0, 0, 0, 8">
-            </InfoBar>
             <TextBox 
                 x:Name="messageTextBox" 
                 Header="Add a custom emoji by typing its name between colons." 
@@ -33,7 +25,7 @@
             
             <Button x:Name="saveButton" Click="SaveButton_Click" Style="{StaticResource AccentButtonStyle}">Save</Button>
                 <Button x:Name="cancelButton" Click="CancelButton_Click"  Margin="8, 0, 0, 0">Cancel</Button>
-            <HyperlinkButton Content="{x:Bind SignInOutButtonText()}" x:Name="signInOutButton" Click="SignInOutButton_Click" Margin="8, 0, 0, 0" />
+            <HyperlinkButton x:Name="signInOutButton" Click="SignInOutButton_Click" Margin="8, 0, 0, 0" />
 
 
         </StackPanel>
