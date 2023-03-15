@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http;
 using System.Text.Json;
 using Windows.System;
 using Windows.Web.Http;
 using Windows.Web.Http.Headers;
+using HttpClient = Windows.Web.Http.HttpClient;
 
 namespace Sashimi;
 
@@ -63,6 +65,27 @@ public class SlackClient
     {
         Uri uri = new($"https://slack.com/oauth/authorize?client_id={_clientId}&scope={scope}");
         await Launcher.LaunchUriAsync(uri);
+    }
+
+    /// <summary>
+    /// Revokes the current token from Slack and removes it from the client.
+    /// </summary>
+    /// <exception cref="HttpRequestException">If revoking the token from Slack fails. The token will not be cleared if this fails.</exception>
+    public async void Unauthorise()
+    {
+        // Call API to unauthorise token
+        Uri uri = new("https://slack.com/api/auth.revoke");
+
+        HttpStringContent request = new($"{{token: {_token}}}");
+        request.Headers["Content-type"] = "application/x-www-form-urlencoded; charset=utf-8";
+
+        HttpClient httpClient = new();
+        httpClient.DefaultRequestHeaders.Authorization = new HttpCredentialsHeaderValue("Bearer", _token);
+
+        var httpResponseMessage = await httpClient.PostAsync(uri, request);
+        httpResponseMessage.EnsureSuccessStatusCode();
+
+        _token = null;
     }
 
     /// <summary>

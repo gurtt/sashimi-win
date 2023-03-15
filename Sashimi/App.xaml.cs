@@ -84,14 +84,13 @@ namespace Sashimi
             try
             {
                 CredentialLockerHelper.Remove(ClTokenKey);
+                _slack.Unauthorise();
+                _mWindow.NotifyAuthStatusChanged();
             }
             catch
             {
                 // TODO: Handle not being able to remove the key
             }
-
-            _slack.SetToken(null);
-            _mWindow.NotifyAuthStatusChanged();
         }
 
         public static bool IsSignedIn => _slack.HasToken;
