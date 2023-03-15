@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Windows.System;
 using Windows.Web.Http;
 using Windows.Web.Http.Headers;
@@ -104,6 +105,16 @@ public class SlackClient
         HttpClient httpClient = new();
         httpClient.DefaultRequestHeaders.Authorization = new HttpCredentialsHeaderValue("Bearer", _token);
         var httpResponseMessage = await httpClient.PostAsync(uri, request);
+
+        // Recursively wait if rate-limited
+        if (httpResponseMessage.StatusCode == HttpStatusCode.TooManyRequests)
+        {
+            int retryAfter = int.TryParse(httpResponseMessage.Headers["Retry-After"], out retryAfter) ? retryAfter : 10;
+            await Task.Delay(retryAfter).ContinueWith(_ => {
+                SetStatus(status);
+            });
+        }
+
         httpResponseMessage.EnsureSuccessStatusCode();
     }
 
