@@ -22,6 +22,8 @@ namespace Sashimi
     /// </summary>
     public partial class MainWindow
     {
+
+        private ContentDialog displayedContentDialog;
         public MainWindow()
         {
             InitializeComponent();
@@ -75,15 +77,30 @@ namespace Sashimi
 
         public async void ShowSignedInViaClipboardMessage()
         {
-            ContentDialog cd = new()
+            if (displayedContentDialog != null) displayedContentDialog.Hide();
+
+            displayedContentDialog = new()
             {
                 Title = "Signed in to Slack",
                 Content = "We got the token you copied to the clipboard.",
                 CloseButtonText = "Ok",
                 XamlRoot = Content.XamlRoot
             };
-            await cd.ShowAsync();
+            await displayedContentDialog.ShowAsync();
+        }
 
+        public async void ShowAuthErrorMessage()
+        {
+            if (displayedContentDialog != null) displayedContentDialog.Hide();
+
+            displayedContentDialog = new()
+            {
+                Title = "Can't connect to Slack",
+                Content = "You need to sign in again.",
+                CloseButtonText = "Ok",
+                XamlRoot = Content.XamlRoot
+            };
+            await displayedContentDialog.ShowAsync();
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -97,7 +114,7 @@ namespace Sashimi
             Close();
         }
 
-        private void SignInOutButton_Click(object sender, RoutedEventArgs e)
+        private void SignInOutButton_Click(object sender, RoutedEventArgs? e)
         {
             if (App.IsSignedIn)
                 App.SignOut();

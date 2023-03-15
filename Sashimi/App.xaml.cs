@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Net;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.DataTransfer;
@@ -127,6 +129,8 @@ namespace Sashimi
 
         private static void HandleCallStateChanged(object sender, CallStateChangedEventArgs e)
         {
+            if (!_slack.HasToken) return;
+
             switch (e.State)
             {
                 case CallState.InCall:
@@ -147,6 +151,21 @@ namespace Sashimi
                                 )
                         );
                     }
+                    catch (HttpRequestException ex)
+                    {
+                        if (ex.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            _slack.SetToken(null); // Can't SignOut() if the token isn't valid 😉
+
+                            // The window is on another thread; marshal to UI thread via dispatcher
+                            _mWindow.DispatcherQueue.TryEnqueue(() =>
+                            {
+                                _mWindow.Activate();
+                                _mWindow.NotifyAuthStatusChanged();
+                                _mWindow.ShowAuthErrorMessage();
+                            });
+                        }
+                    }
                     catch (Exception ex )
                     {
                         Debug.Fail($"Couldn't set status: {ex.Message}");
@@ -158,6 +177,21 @@ namespace Sashimi
                     try
                     {
                         _slack.ClearStatus();
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        if (ex.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            _slack.SetToken(null); // Can't SignOut() if the token isn't valid 😉
+
+                            // The window is on another thread; marshal to UI thread via dispatcher
+                            _mWindow.DispatcherQueue.TryEnqueue(() =>
+                            {
+                                _mWindow.Activate();
+                                _mWindow.NotifyAuthStatusChanged();
+                                _mWindow.ShowAuthErrorMessage();
+                            });
+                        }
                     }
                     catch (Exception ex)
                     {
