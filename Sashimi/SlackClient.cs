@@ -93,6 +93,7 @@ public class SlackClient
     /// </summary>
     /// <param name="emoji">The emoji string to set the status to. A nil value uses the Slack default status emoji.</param>
     /// <param name="text">The text to set the status to.</param>
+    /// <exception cref="HttpRequestException">If setting the status fails.</exception>
     public async void SetStatus(SlackStatus status)
     {
         Uri uri = new("https://slack.com/api/users.profile.set");
@@ -104,8 +105,6 @@ public class SlackClient
         httpClient.DefaultRequestHeaders.Authorization = new HttpCredentialsHeaderValue("Bearer", _token);
         var httpResponseMessage = await httpClient.PostAsync(uri, request);
         httpResponseMessage.EnsureSuccessStatusCode();
-
-        
     }
 
     /// <summary>

@@ -130,23 +130,40 @@ namespace Sashimi
             switch (e.State)
             {
                 case CallState.InCall:
-                    _slack.SetStatus(
-                            (string)_localSettings.Values["statusEmoji"] == string.Empty && (string)_localSettings.Values["statusText"] == string.Empty
+                    try
+                    {
+                        _slack.SetStatus(
+                            (string)_localSettings.Values["statusEmoji"] == string.Empty &&
+                            (string)_localSettings.Values["statusText"] == string.Empty
                                 ? new SlackStatus
-                            (
-                                ":sushi:", 
-                                "In a call"
-                            )
-                                : new SlackStatus 
-                            (
-                                (string)_localSettings.Values["statusEmoji"],
-                                (string)_localSettings.Values["statusText"]
-                            )
-                    );
+                                (
+                                    ":sushi:",
+                                    "In a call"
+                                )
+                                : new SlackStatus
+                                (
+                                    (string)_localSettings.Values["statusEmoji"],
+                                    (string)_localSettings.Values["statusText"]
+                                )
+                        );
+                    }
+                    catch (Exception ex )
+                    {
+                        Debug.Fail($"Couldn't set status: {ex.Message}");
+                    }
+
                     break;
 
                 case CallState.CallEnded:
-                    _slack.ClearStatus();
+                    try
+                    {
+                        _slack.ClearStatus();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.Fail($"Couldn't clear status: {ex.Message}");
+                    }
+
                     break;
 
                 default:
