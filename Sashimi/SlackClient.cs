@@ -72,7 +72,7 @@ public class SlackClient
     /// Revokes the current token from Slack and removes it from the client.
     /// </summary>
     /// <exception cref="HttpRequestException">If revoking the token from Slack fails. The token will not be cleared if this fails.</exception>
-    public async void Unauthorise()
+    public async Task Unauthorise()
     {
         // Call API to unauthorise token
         Uri uri = new("https://slack.com/api/auth.revoke");

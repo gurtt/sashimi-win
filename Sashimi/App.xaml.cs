@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
@@ -9,6 +10,9 @@ using System.Text.RegularExpressions;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
+using Microsoft.AppCenter;
+using Microsoft.AppCenter.Analytics;
+using Microsoft.AppCenter.Crashes;
 using Microsoft.Windows.AppLifecycle;
 using static Sashimi.SlackClient;
 using LaunchActivatedEventArgs = Microsoft.UI.Xaml.LaunchActivatedEventArgs;
@@ -26,6 +30,7 @@ namespace Sashimi
         private const string ClTokenKey = "slack-access-token";
         private const string ClientId = "4228676926246.4237754035636";
         private const string Scope = "users.profile:write";
+        private const string AnalyticsAppSecret = "";
 
         private static SlackClient _slack;
         private static ApplicationDataContainer _localSettings;
@@ -40,6 +45,9 @@ namespace Sashimi
         public App()
         {
             InitializeComponent();
+
+            AppCenter.Start(AnalyticsAppSecret,
+                typeof(Analytics), typeof(Crashes));
         }
 
         /// <summary>
@@ -81,18 +89,20 @@ namespace Sashimi
             _shouldHandleCopiedToken = true;
         }
 
-        public static void SignOut()
+        public static async void SignOut()
         {
             try
             {
                 CredentialLockerHelper.Remove(ClTokenKey);
-                _slack.Unauthorise();
+                await _slack.Unauthorise();
                 _mWindow.NotifyAuthStatusChanged();
             }
             catch
             {
                 // TODO: Handle not being able to remove the key
             }
+
+            Analytics.TrackEvent("SignedOut");
         }
 
         public static bool IsSignedIn => _slack.HasToken;
@@ -125,6 +135,10 @@ namespace Sashimi
                 });
             }
             // TODO: Handle bad protocol requests
+
+            Analytics.TrackEvent("SignedIn", new Dictionary<string, string> {
+                { "Method", "Protocol" },
+            });
         }
 
         private static void HandleCallStateChanged(object sender, CallStateChangedEventArgs e)
@@ -137,8 +151,8 @@ namespace Sashimi
                     try
                     {
                         _slack.SetStatus(
-                            (string)_localSettings.Values["statusEmoji"] == string.Empty &&
-                            (string)_localSettings.Values["statusText"] == string.Empty
+                            string.IsNullOrEmpty((string)_localSettings.Values["statusEmoji"]) &&
+                            string.IsNullOrEmpty((string)_localSettings.Values["statusText"])
                                 ? new SlackStatus
                                 (
                                     ":sushi:",
@@ -165,11 +179,17 @@ namespace Sashimi
                                 _mWindow.ShowAuthErrorMessage();
                             });
                         }
+
+                        Analytics.TrackEvent("RequestException", new Dictionary<string, string> {
+                            { "HttpStatusCode", ex.StatusCode.ToString() }
+                        });
                     }
                     catch (Exception ex )
                     {
                         Debug.Fail($"Couldn't set status: {ex.Message}");
                     }
+
+                    Analytics.TrackEvent("StartedCall");
 
                     break;
 
@@ -192,6 +212,10 @@ namespace Sashimi
                                 _mWindow.ShowAuthErrorMessage();
                             });
                         }
+
+                        Analytics.TrackEvent("RequestException", new Dictionary<string, string> {
+                            { "HttpStatusCode", ex.StatusCode.ToString() }
+                        });
                     }
                     catch (Exception ex)
                     {
@@ -234,6 +258,10 @@ namespace Sashimi
                 _mWindow.NotifyAuthStatusChanged(); 
                 _mWindow.ShowSignedInViaClipboardMessage();
             });
+
+            Analytics.TrackEvent("SignedIn", new Dictionary<string, string> {
+                { "Method", "Clipboard" },
+            });
         }
 
         public static void SetPreferencesForMessage(string message)
@@ -250,6 +278,11 @@ namespace Sashimi
 
             _localSettings.Values["statusEmoji"] = statusEmoji;
             _localSettings.Values["statusText"] = statusMessage;
+
+            Analytics.TrackEvent("SetCustomMessage", new Dictionary<string, string> {
+                { "DidUseEmoji", (!string.IsNullOrEmpty(statusEmoji)).ToString() },
+                { "DidUseMessage", (!string.IsNullOrEmpty(statusMessage)).ToString() },
+            });
         }
 
         private static MainWindow _mWindow;
