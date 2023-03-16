@@ -35,7 +35,7 @@ public class SlackClient
             profile = status;
         }
 
-        private SlackStatus profile { get; set; }
+        public SlackStatus profile { get; set; }
     }
 
     private readonly string _clientId;
