@@ -16,6 +16,7 @@ using Microsoft.AppCenter.Crashes;
 using Microsoft.Windows.AppLifecycle;
 using static Sashimi.SlackClient;
 using LaunchActivatedEventArgs = Microsoft.UI.Xaml.LaunchActivatedEventArgs;
+using Microsoft.UI.Xaml;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -35,19 +36,18 @@ namespace Sashimi
         private static SlackClient _slack;
         private static ApplicationDataContainer _localSettings;
         private TeamsAppEventWatcher _teams;
+        private static MainWindow _mWindow;
 
         private static bool _shouldHandleCopiedToken;
+        public static bool IsSignedIn => _slack.HasToken;
 
         /// <summary>
-        /// Initializes the singleton application object.  This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
+        /// Initializes the singleton application object.
         /// </summary>
         public App()
         {
             InitializeComponent();
-
-            AppCenter.Start(AnalyticsAppSecret,
-                typeof(Analytics), typeof(Crashes));
+            AppCenter.Start(AnalyticsAppSecret, typeof(Analytics), typeof(Crashes));
         }
 
         /// <summary>
@@ -65,8 +65,18 @@ namespace Sashimi
                 _slack = new SlackClient(ClientId);
             }
 
-            _teams = new TeamsAppEventWatcher();
-            _teams.CallStateChanged += HandleCallStateChanged;
+            try
+            {
+                _teams = new TeamsAppEventWatcher();
+                _teams.CallStateChanged += HandleCallStateChanged;
+            }
+            catch (Exception ex)
+            {
+                Crashes.TrackError(ex, new Dictionary<string, string>{
+                    { "Where", "OnLaunched" },
+                    { "Issue", "Teams isn't installed" }
+                });
+            }
 
             _localSettings = ApplicationData.Current.LocalSettings;
 
@@ -83,145 +93,66 @@ namespace Sashimi
             Debug.WriteLine("Ready");
         }
 
-        public static void SignIn()
-        {
-            _slack.Authorise(Scope);
-            _shouldHandleCopiedToken = true;
-        }
-
-        public static async void SignOut()
-        {
-            try
-            {
-                CredentialLockerHelper.Remove(ClTokenKey);
-                await _slack.Unauthorise();
-                _mWindow.NotifyAuthStatusChanged();
-            }
-            catch
-            {
-                // TODO: Handle not being able to remove the key
-            }
-
-            Analytics.TrackEvent("SignedOut");
-        }
-
-        public static bool IsSignedIn => _slack.HasToken;
-
-        // The window is on another thread; marshal to UI thread via dispatcher
-        public static void HandleOtherActivation() =>
-            _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.Activate(); });
-        public static void HandleProtocolActivation(AppActivationArguments args)
-        {
-            var uri = ((ProtocolActivatedEventArgs)args.Data).Uri;
-
-            if (uri.Scheme == "sashimi" && uri.LocalPath == "auth" && uri.Query.StartsWith("?token=") && uri.Query.Length > 7) {
-                var token = uri.Query[7..];
-                try
-                {
-                    CredentialLockerHelper.Set(ClTokenKey, token);
-                } catch
-                {
-                    // TODO: Handle not being able to save the key
-                }
-
-                _slack.SetToken(token);
-                _shouldHandleCopiedToken = false;
-
-                // The window is on another thread; marshal to UI thread via dispatcher
-                _mWindow.DispatcherQueue.TryEnqueue(() =>
-                {
-                    _mWindow.NotifyAuthStatusChanged(); 
-                    _mWindow.Activate();
-                });
-            }
-            // TODO: Handle bad protocol requests
-
-            Analytics.TrackEvent("SignedIn", new Dictionary<string, string> {
-                { "Method", "Protocol" },
-            });
-        }
+        #region EventHandlers
 
         private static void HandleCallStateChanged(object sender, CallStateChangedEventArgs e)
         {
             if (!_slack.HasToken) return;
 
+            void TrySetStatus(SlackStatus status)
+            {
+                try
+                {
+                    _slack.SetStatus(status);
+                }
+                catch (HttpRequestException ex)
+                {
+                    if (ex.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        _slack.SetToken(null); // Can't SignOut() if the token isn't valid 😉
+
+                        _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.ShowContentDialog("Can't connect to Slack", "You need to sign in again."); });
+
+                        Crashes.TrackError(ex, new Dictionary<string, string>{
+                                { "Where", "HandleCallStateChanged:InCall" },
+                                { "Issue", "Slack token is invalid" }
+                            });
+                    }
+
+                    Crashes.TrackError(ex, new Dictionary<string, string>{
+                            { "Where", "HandleCallStateChanged:InCall" },
+                            { "Issue", "HTTP error" }
+                        });
+                }
+                catch (Exception ex)
+                {
+                    Crashes.TrackError(ex, new Dictionary<string, string>{
+                            { "Where", "HandleCallStateChanged:InCall" },
+                            { "Issue", "Couldn't set status" }
+                        });
+                }
+            }
+
             switch (e.State)
             {
                 case CallState.InCall:
-                    try
-                    {
-                        _slack.SetStatus(
-                            string.IsNullOrEmpty((string)_localSettings.Values["statusEmoji"]) &&
-                            string.IsNullOrEmpty((string)_localSettings.Values["statusText"])
-                                ? new SlackStatus
-                                (
-                                    ":sushi:",
-                                    "In a call"
-                                )
-                                : new SlackStatus
-                                (
-                                    (string)_localSettings.Values["statusEmoji"],
-                                    (string)_localSettings.Values["statusText"]
-                                )
-                        );
-                    }
-                    catch (HttpRequestException ex)
-                    {
-                        if (ex.StatusCode == HttpStatusCode.Unauthorized)
-                        {
-                            _slack.SetToken(null); // Can't SignOut() if the token isn't valid 😉
-
-                            // The window is on another thread; marshal to UI thread via dispatcher
-                            _mWindow.DispatcherQueue.TryEnqueue(() =>
-                            {
-                                _mWindow.Activate();
-                                _mWindow.NotifyAuthStatusChanged();
-                                _mWindow.ShowAuthErrorMessage();
-                            });
-                        }
-
-                        Analytics.TrackEvent("RequestException", new Dictionary<string, string> {
-                            { "HttpStatusCode", ex.StatusCode.ToString() }
-                        });
-                    }
-                    catch (Exception ex )
-                    {
-                        Debug.Fail($"Couldn't set status: {ex.Message}");
-                    }
-
+                    TrySetStatus(string.IsNullOrEmpty((string)_localSettings.Values["statusEmoji"]) &&
+                                 string.IsNullOrEmpty((string)_localSettings.Values["statusText"])
+                        ? new SlackStatus
+                        (
+                            ":sushi:",
+                            "In a call"
+                        )
+                        : new SlackStatus
+                        (
+                            (string)_localSettings.Values["statusEmoji"],
+                            (string)_localSettings.Values["statusText"]
+                        ));
                     Analytics.TrackEvent("StartedCall");
-
                     break;
 
                 case CallState.CallEnded:
-                    try
-                    {
-                        _slack.ClearStatus();
-                    }
-                    catch (HttpRequestException ex)
-                    {
-                        if (ex.StatusCode == HttpStatusCode.Unauthorized)
-                        {
-                            _slack.SetToken(null); // Can't SignOut() if the token isn't valid 😉
-
-                            // The window is on another thread; marshal to UI thread via dispatcher
-                            _mWindow.DispatcherQueue.TryEnqueue(() =>
-                            {
-                                _mWindow.Activate();
-                                _mWindow.NotifyAuthStatusChanged();
-                                _mWindow.ShowAuthErrorMessage();
-                            });
-                        }
-
-                        Analytics.TrackEvent("RequestException", new Dictionary<string, string> {
-                            { "HttpStatusCode", ex.StatusCode.ToString() }
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.Fail($"Couldn't clear status: {ex.Message}");
-                    }
-
+                    TrySetStatus(new SlackStatus { status_emoji = "", status_text = "" });
                     break;
 
                 default:
@@ -243,28 +174,74 @@ namespace Sashimi
             {
                 CredentialLockerHelper.Set(ClTokenKey, text);
             }
-            catch
+            catch (Exception ex)
             {
+                Crashes.TrackError(ex, new Dictionary<string, string>{
+                    { "Where", "HandleClipboardContentChanged" },
+                    { "Issue", "Couldn't save token to credential locker" }
+                });
+
                 // TODO: Handle not being able to save the key
             }
 
             _slack.SetToken(text);
             _shouldHandleCopiedToken = false;
 
-            // The window is on another thread; marshal to UI thread via dispatcher
-            _mWindow.DispatcherQueue.TryEnqueue(() =>
-            {
-                _mWindow.Activate(); 
-                _mWindow.NotifyAuthStatusChanged(); 
-                _mWindow.ShowSignedInViaClipboardMessage();
-            });
+            _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.ShowContentDialog("Signed in to Slack", "We got the token you copied to the clipboard."); });
 
             Analytics.TrackEvent("SignedIn", new Dictionary<string, string> {
                 { "Method", "Clipboard" },
             });
         }
 
-        public static void SetPreferencesForMessage(string message)
+        #endregion
+
+        #region ActivationEventHandlers
+        public static void HandleOtherActivation() =>
+            _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.Activate(); });
+        public static void HandleProtocolActivation(AppActivationArguments args)
+        {
+            var uri = ((ProtocolActivatedEventArgs)args.Data).Uri;
+
+            if (uri.Scheme == "sashimi" && uri.LocalPath == "auth" && uri.Query.StartsWith("?token=") && uri.Query.Length > 7) {
+                var token = uri.Query[7..];
+                try
+                {
+                    CredentialLockerHelper.Set(ClTokenKey, token);
+                } catch (Exception ex) {
+                    Crashes.TrackError(ex, new Dictionary<string, string>{
+                        { "Where", "HandleProtocolActivation" },
+                        { "Issue", "Couldn't save token to credential locker" }
+                    });
+
+                    // TODO: Handle not being able to save the key
+                }
+
+                _slack.SetToken(token);
+                _shouldHandleCopiedToken = false;
+
+                _mWindow.DispatcherQueue.TryEnqueue(() =>
+                {
+                    _mWindow.TriggerUIStateUpdate(); 
+                    _mWindow.Activate();
+                });
+            }
+            // TODO: Handle bad protocol requests
+
+            Analytics.TrackEvent("SignedIn", new Dictionary<string, string> {
+                { "Method", "Protocol" },
+            });
+        }
+
+        #endregion
+
+        #region UI Actions
+
+        /// <summary>
+        /// Parses the custom message string and persists it to storage.
+        /// </summary>
+        /// <param name="message">The message to parse.</param>
+        public static void SetCustomMessage(string message)
         {
             // TODO: Verify message is no more than 100 chars, emoji is valid, etc.
 
@@ -285,6 +262,39 @@ namespace Sashimi
             });
         }
 
-        private static MainWindow _mWindow;
+        /// <summary>
+        /// Triggers the authorisation flow.
+        /// </summary>
+        public static void SignIn()
+        {
+            _slack.Authorise(Scope);
+            _shouldHandleCopiedToken = true;
+        }
+
+        /// <summary>
+        /// Triggers the deauthorisation flow.
+        /// </summary>
+        public static async void SignOut()
+        {
+            try
+            {
+                CredentialLockerHelper.Remove(ClTokenKey);
+                await _slack.Deauthorise();
+                _mWindow.TriggerUIStateUpdate();
+            }
+            catch (Exception ex)
+            {
+                Crashes.TrackError(ex, new Dictionary<string, string>{
+                    { "Where", "SignOut" },
+                    { "Issue", "Couldn't sign out" }
+                });
+
+                // TODO: Handle not being able to remove the key
+            }
+
+            Analytics.TrackEvent("SignedOut");
+        }
+
+        #endregion
     }
 }

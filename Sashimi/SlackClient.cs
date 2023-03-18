@@ -12,18 +12,27 @@ namespace Sashimi;
 
 public class SlackClient
 {
+    private struct SetProfileResponse
+    {
+        public string ok;
+        public string? error;
+        public string? profile;
+    }
     public struct SlackStatus
     {
-
-        public SlackStatus(string statusEmoji, string statusText)
+        public SlackStatus(string statusEmoji, string statusText, int statusExpiration = 0)
         {
             status_emoji = statusEmoji;
+            status_expiration = statusExpiration;
             status_text = statusText;
         }
 
-        #pragma warning disable IDE1006
+#pragma warning disable IDE1006
+        /// <value>The displayed emoji that is enabled for the Slack team, such as <c>:train:</c>.</value>
         public string status_emoji { get; set; }
-        public int status_expiration { get; set; } = 0;
+        /// <value>The Unix Timestamp of when the status will expire.Providing <c>0</c> or omitting this field results in a custom status that will not expire.</value>
+        public int status_expiration { get; set; }
+        /// <value>The displayed text of up to 100 characters. We strongly encourage brevity.</value>
         public string status_text { get; set; }
         #pragma warning restore IDE1006
     }
@@ -35,28 +44,21 @@ public class SlackClient
             profile = status;
         }
 
+        /// <value>Collection of key:value pairs presented as a URL-encoded JSON hash. At most 50 fields may be set. Each field name is limited to 255 characters.</value>
         public SlackStatus profile { get; set; }
     }
 
+    /// <value>Client ID used to identify the app when starting OAuth flows. Used in <see cref="Authorise"/></value>
     private readonly string _clientId;
+    /// <value>Authorisation token to make API requests. Starts with <c>xoxp-</c>.</value>
     private string _token;
+    public bool HasToken => _token != null;
 
     public SlackClient(string clientId, string token = null)
     {
         _clientId = clientId;
         _token = token;
     }
-
-    /// <summary>
-    /// Sets the token to use for API requests.
-    /// </summary>
-    /// <param name="token">The token to use.</param>
-    public void SetToken(string token)
-    {
-        _token = token;
-    }
-
-    public bool HasToken => _token != null;
 
     /// <summary>
     /// Opens a browser to request an authorisation code from Slack.
@@ -68,13 +70,21 @@ public class SlackClient
         await Launcher.LaunchUriAsync(uri);
     }
 
+    /// <inheritdoc cref="SetStatus"/>
+    /// <summary>
+    /// Clears the user status.
+    /// </summary>
+    public void ClearStatus()
+    {
+        SetStatus(new SlackStatus { status_emoji = "", status_text = "" });
+    }
+
     /// <summary>
     /// Revokes the current token from Slack and removes it from the client.
     /// </summary>
-    /// <exception cref="HttpRequestException">If revoking the token from Slack fails. The token will not be cleared if this fails.</exception>
-    public async Task Unauthorise()
+    /// <exception cref="HttpRequestException">If the HTTP request fails. The token will not be cleared if this exception is thrown.</exception>
+    public async Task Deauthorise()
     {
-        // Call API to unauthorise token
         Uri uri = new("https://slack.com/api/auth.revoke");
 
         HttpStringContent request = new($"{{token: {_token}}}");
@@ -92,9 +102,9 @@ public class SlackClient
     /// <summary>
     /// Sets the user status.
     /// </summary>
-    /// <param name="emoji">The emoji string to set the status to. A nil value uses the Slack default status emoji.</param>
-    /// <param name="text">The text to set the status to.</param>
-    /// <exception cref="HttpRequestException">If setting the status fails.</exception>
+    /// <param name="status">The status to set..</param>
+    /// <exception cref="HttpRequestException">If the HTTP request fails.</exception>
+    /// <exception cref="Exception">If the HTTP request succeeds, but setting the status fails.</exception>
     public async void SetStatus(SlackStatus status)
     {
         Uri uri = new("https://slack.com/api/users.profile.set");
@@ -116,14 +126,19 @@ public class SlackClient
         }
 
         httpResponseMessage.EnsureSuccessStatusCode();
+        SetProfileResponse response = JsonSerializer.Deserialize<SetProfileResponse>(await httpResponseMessage.Content.ReadAsStringAsync());
+        if (response.ok != "true")
+        {
+            throw new Exception(response.error);
+        }
     }
 
     /// <summary>
-    /// Clears the user status.
+    /// Sets the token to use for API requests.
     /// </summary>
-    public void ClearStatus()
+    /// <param name="token">The token to use.</param>
+    public void SetToken(string token)
     {
-        SetStatus(new SlackStatus { status_emoji = "", status_text = "" });
+        _token = token;
     }
-
 }

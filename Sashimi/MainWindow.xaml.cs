@@ -23,27 +23,41 @@ namespace Sashimi
     public partial class MainWindow
     {
 
-        private ContentDialog displayedContentDialog;
+        private ContentDialog _displayedContentDialog;
         public MainWindow()
         {
             InitializeComponent();
 
-            var presenter = GetAppWindowAndPresenter();
-            presenter.IsMaximizable = false;
-            presenter.IsMinimizable = false;
-            presenter.IsResizable = false;
-            presenter.SetBorderAndTitleBar(true, false);
-
-            NotifyAuthStatusChanged();
-
+            // Get window handles
             var hWnd = WindowNative.GetWindowHandle(this);
-            var myWndId = Win32Interop.GetWindowIdFromWindow(hWnd);
-            var apw = AppWindow.GetFromWindowId(myWndId);
+            var windowId = Win32Interop.GetWindowIdFromWindow(hWnd);
+            var appWindow = AppWindow.GetFromWindowId(windowId);
+
+   // Remove window chrome
+            var presenter = appWindow.Presenter as OverlappedPresenter;
+            presenter!.IsMaximizable = false;
+            presenter!.IsMinimizable = false;
+            presenter!.IsResizable = false;
+            presenter!.SetBorderAndTitleBar(true, false);
+
+            // Resize and position window
+            appWindow.Resize(new SizeInt32(500, 245)); // TODO: Programatically resize window shrink to fit
+            var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Nearest);
+            if (displayArea is not null)
+            {
+                var centredPosition = appWindow.Position;
+                centredPosition.X = (displayArea.WorkArea.Width - appWindow.Size.Width) / 2;
+                centredPosition.Y = (displayArea.WorkArea.Height - appWindow.Size.Height) / 2;
+                appWindow.Move(centredPosition);
+            }
+
+            // Setup UI state
+            TriggerUiStateUpdate();
 
             Closed += (_, e) =>
             {
                 e.Handled = true;
-                apw.Hide();
+                appWindow.Hide();
             };
 
             [DllImport("user32.dll")]
@@ -55,57 +69,39 @@ namespace Sashimi
             };
         }
 
-        private OverlappedPresenter GetAppWindowAndPresenter()
+        #region UiUpdates
+
+        /// <summary>
+        /// Updates the sign in/out button to show current app state.
+        /// </summary>
+        public void TriggerUiStateUpdate() => SignInOutButton.Content = $"Sign {(App.IsSignedIn ? "Out of" : "In to")} Slack";
+
+        /// <summary>
+        /// Activates the window and then shows a <see cref="ContentDialog"/> with the supplied title and content. Dismisses an existing dialog, if any.
+        /// </summary>
+        public async void ShowContentDialog(string? title, string? content)
         {
-            var hWnd = WindowNative.GetWindowHandle(this);
-            var myWndId = Win32Interop.GetWindowIdFromWindow(hWnd);
-            var apw = AppWindow.GetFromWindowId(myWndId);
-            apw.Resize(new SizeInt32(500, 245));
-            var displayArea = DisplayArea.GetFromWindowId(myWndId, DisplayAreaFallback.Nearest);
-            if (displayArea is not null)
+            if (_displayedContentDialog != null) _displayedContentDialog.Hide();
+
+            Activate();
+
+            _displayedContentDialog = new()
             {
-                var centredPosition = apw.Position;
-                centredPosition.X = (displayArea.WorkArea.Width - apw.Size.Width) / 2;
-                centredPosition.Y = (displayArea.WorkArea.Height - apw.Size.Height) / 2;
-                apw.Move(centredPosition);
-            }
-
-            return apw.Presenter as OverlappedPresenter;
-        }
-
-        public void NotifyAuthStatusChanged() => SignInOutButton.Content = $"Sign {(App.IsSignedIn ? "Out of" : "In to")} Slack";
-
-        public async void ShowSignedInViaClipboardMessage()
-        {
-            if (displayedContentDialog != null) displayedContentDialog.Hide();
-
-            displayedContentDialog = new()
-            {
-                Title = "Signed in to Slack",
-                Content = "We got the token you copied to the clipboard.",
+                Title = title,
+                Content = content,
                 CloseButtonText = "Ok",
                 XamlRoot = Content.XamlRoot
             };
-            await displayedContentDialog.ShowAsync();
+            await _displayedContentDialog.ShowAsync();
         }
 
-        public async void ShowAuthErrorMessage()
-        {
-            if (displayedContentDialog != null) displayedContentDialog.Hide();
+        #endregion
 
-            displayedContentDialog = new()
-            {
-                Title = "Can't connect to Slack",
-                Content = "You need to sign in again.",
-                CloseButtonText = "Ok",
-                XamlRoot = Content.XamlRoot
-            };
-            await displayedContentDialog.ShowAsync();
-        }
+        #region EventHandlers
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            App.SetPreferencesForMessage(this.MessageTextBox.Text);
+            App.SetCustomMessage(this.MessageTextBox.Text);
             Close();
         }
 
@@ -126,5 +122,7 @@ namespace Sashimi
         {
             if (e.Key == VirtualKey.Enter) SaveButton_Click(sender, new RoutedEventArgs());
         }
+
+        #endregion
     }
 }
