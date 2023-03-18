@@ -16,7 +16,7 @@
             <TextBox 
                 x:Name="MessageTextBox" 
                 Header="Add a custom emoji by typing its name between colons." 
-                PlaceholderText=":sushi: In a call" 
+                PlaceholderText=":sushi: In a call"
                 KeyDown="OnKeyDownHandler" 
             />
         </StackPanel>

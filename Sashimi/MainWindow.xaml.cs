@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Windows.Graphics;
 using Windows.System;
 using Microsoft.UI;
@@ -40,17 +41,6 @@ namespace Sashimi
             presenter!.IsResizable = false;
             presenter!.SetBorderAndTitleBar(true, false);
 
-            // Resize and position window
-            appWindow.Resize(new SizeInt32(500, 245)); // TODO: Programatically resize window shrink to fit
-            var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Nearest);
-            if (displayArea is not null)
-            {
-                var centredPosition = appWindow.Position;
-                centredPosition.X = (displayArea.WorkArea.Width - appWindow.Size.Width) / 2;
-                centredPosition.Y = (displayArea.WorkArea.Height - appWindow.Size.Height) / 2;
-                appWindow.Move(centredPosition);
-            }
-
             // Setup UI state
             TriggerUiStateUpdate();
 
@@ -62,10 +52,21 @@ namespace Sashimi
 
             [DllImport("user32.dll")]
             static extern bool SetForegroundWindow(IntPtr hWnd);
-
             Activated += (_, _) =>
             {
                SetForegroundWindow(hWnd);
+
+               // Shrink to fit content, centre position
+               appWindow.Resize(new SizeInt32((int)Math.Round(Content.DesiredSize.Width),
+                   (int)Math.Round(Content.DesiredSize.Height)));
+               var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Nearest);
+               if (displayArea is not null)
+               {
+                   var centredPosition = appWindow.Position;
+                   centredPosition.X = (displayArea.WorkArea.Width - appWindow.Size.Width) / 2;
+                   centredPosition.Y = (displayArea.WorkArea.Height - appWindow.Size.Height) / 2;
+                   appWindow.Move(centredPosition);
+               }
             };
         }
 
@@ -79,7 +80,7 @@ namespace Sashimi
         /// <summary>
         /// Activates the window and then shows a <see cref="ContentDialog"/> with the supplied title and content. Dismisses an existing dialog, if any.
         /// </summary>
-        public async void ShowContentDialog(string? title, string? content)
+        public async void ShowContentDialog(string title = "", string content = "")
         {
             if (_displayedContentDialog != null) _displayedContentDialog.Hide();
 
@@ -110,7 +111,7 @@ namespace Sashimi
             Close();
         }
 
-        private void SignInOutButton_Click(object sender, RoutedEventArgs? e)
+        private void SignInOutButton_Click(object sender, RoutedEventArgs e)
         {
             if (App.IsSignedIn)
                 App.SignOut();

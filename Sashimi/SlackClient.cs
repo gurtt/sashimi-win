@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Text.Json;
@@ -14,9 +15,11 @@ public class SlackClient
 {
     private struct SetProfileResponse
     {
+        #nullable enable
         public string ok;
         public string? error;
         public string? profile;
+        #nullable restore
     }
     public struct SlackStatus
     {

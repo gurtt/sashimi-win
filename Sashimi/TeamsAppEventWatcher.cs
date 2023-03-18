@@ -35,17 +35,10 @@ namespace Sashimi
 
         public TeamsAppEventWatcher()
         {
-            try
-            {
-                _watcher = new FileSystemWatcher(TeamsMonitoringPath);
-                _watcher.Changed += OnChanged;
-                _watcher.Filter = "storage.json";
-                _watcher.EnableRaisingEvents = true;
-            }
-            catch
-            {
-                Debug.WriteLine("Failed to init FileWatcher");
-            }
+            _watcher = new FileSystemWatcher(TeamsMonitoringPath);
+            _watcher.Changed += OnChanged;
+            _watcher.Filter = "storage.json";
+            _watcher.EnableRaisingEvents = true;
         }
 
         private void OnChanged(object sender, FileSystemEventArgs e)

@@ -17,6 +17,7 @@ using Microsoft.Windows.AppLifecycle;
 using static Sashimi.SlackClient;
 using LaunchActivatedEventArgs = Microsoft.UI.Xaml.LaunchActivatedEventArgs;
 using Microsoft.UI.Xaml;
+using System.Threading.Tasks;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -54,7 +55,7 @@ namespace Sashimi
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
-        protected override void OnLaunched(LaunchActivatedEventArgs args)
+        protected override async void OnLaunched(LaunchActivatedEventArgs args)
         {
             try
             {
@@ -91,6 +92,10 @@ namespace Sashimi
             }
 
             Debug.WriteLine("Ready");
+
+            await Task.Delay(5).ContinueWith(_ => {
+                _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.ShowContentDialog("Can't connect to Teams", "Check if Teams is installed, then restart Sashimi."); });
+            });
         }
 
         #region EventHandlers
@@ -114,20 +119,20 @@ namespace Sashimi
                         _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.ShowContentDialog("Can't connect to Slack", "You need to sign in again."); });
 
                         Crashes.TrackError(ex, new Dictionary<string, string>{
-                                { "Where", "HandleCallStateChanged:InCall" },
+                                { "Where", "HandleCallStateChanged" },
                                 { "Issue", "Slack token is invalid" }
                             });
                     }
 
                     Crashes.TrackError(ex, new Dictionary<string, string>{
-                            { "Where", "HandleCallStateChanged:InCall" },
+                            { "Where", "HandleCallStateChanged" },
                             { "Issue", "HTTP error" }
                         });
                 }
                 catch (Exception ex)
                 {
                     Crashes.TrackError(ex, new Dictionary<string, string>{
-                            { "Where", "HandleCallStateChanged:InCall" },
+                            { "Where", "HandleCallStateChanged" },
                             { "Issue", "Couldn't set status" }
                         });
                 }
@@ -168,7 +173,7 @@ namespace Sashimi
             var dataPackageView = Clipboard.GetContent();
             if (!dataPackageView.Contains(StandardDataFormats.Text)) return;
             var text = await dataPackageView.GetTextAsync();
-            if (!text.StartsWith("xoxp-") || text.Length <= 5) return; // TODO: Check if the token actually works
+            if (!text.StartsWith("xoxp-") || text.Length <= 5) return;
 
             try
             {
@@ -181,7 +186,7 @@ namespace Sashimi
                     { "Issue", "Couldn't save token to credential locker" }
                 });
 
-                // TODO: Handle not being able to save the key
+                _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.ShowContentDialog("", "You're signed in for now, but you'll need to sign in again next time Sashimi starts."); });
             }
 
             _slack.SetToken(text);
@@ -214,7 +219,7 @@ namespace Sashimi
                         { "Issue", "Couldn't save token to credential locker" }
                     });
 
-                    // TODO: Handle not being able to save the key
+                    _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.ShowContentDialog("", "You're signed in for now, but you'll need to sign in again next time Sashimi starts."); });
                 }
 
                 _slack.SetToken(token);
@@ -222,15 +227,18 @@ namespace Sashimi
 
                 _mWindow.DispatcherQueue.TryEnqueue(() =>
                 {
-                    _mWindow.TriggerUIStateUpdate(); 
+                    _mWindow.TriggerUiStateUpdate(); 
                     _mWindow.Activate();
                 });
-            }
-            // TODO: Handle bad protocol requests
 
-            Analytics.TrackEvent("SignedIn", new Dictionary<string, string> {
-                { "Method", "Protocol" },
-            });
+                Analytics.TrackEvent("SignedIn", new Dictionary<string, string> {
+                    { "Method", "Protocol" },
+                });
+            }
+            else
+            {
+                _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.ShowContentDialog("Broken link", "You opened a Sashimi link, but we don't recognise the format."); });
+            }
         }
 
         #endregion
@@ -243,8 +251,6 @@ namespace Sashimi
         /// <param name="message">The message to parse.</param>
         public static void SetCustomMessage(string message)
         {
-            // TODO: Verify message is no more than 100 chars, emoji is valid, etc.
-
             const string emojiPattern = "^:(?i)[a-z]+:";
             var emojiMatch = Regex.Match(message, emojiPattern);
 
@@ -280,7 +286,7 @@ namespace Sashimi
             {
                 CredentialLockerHelper.Remove(ClTokenKey);
                 await _slack.Deauthorise();
-                _mWindow.TriggerUIStateUpdate();
+                _mWindow.TriggerUiStateUpdate();
             }
             catch (Exception ex)
             {
@@ -288,8 +294,6 @@ namespace Sashimi
                     { "Where", "SignOut" },
                     { "Issue", "Couldn't sign out" }
                 });
-
-                // TODO: Handle not being able to remove the key
             }
 
             Analytics.TrackEvent("SignedOut");
