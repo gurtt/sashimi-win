@@ -32,7 +32,7 @@ namespace Sashimi
         private const string ClTokenKey = "slack-access-token";
         private const string ClientId = "4228676926246.4237754035636";
         private const string Scope = "users.profile:write";
-        private const string AnalyticsAppSecret = "";
+        private const string AnalyticsAppSecret = SecretsManager.AnalyticsAppSecret;
 
         private static SlackClient _slack;
         private static ApplicationDataContainer _localSettings;
@@ -41,6 +41,7 @@ namespace Sashimi
 
         private static bool _shouldHandleCopiedToken;
         public static bool IsSignedIn => _slack.HasToken;
+        private static SlackStatus? previousStatus;
 
         /// <summary>
         /// Initializes the singleton application object.
@@ -141,6 +142,9 @@ namespace Sashimi
             switch (e.State)
             {
                 case CallState.InCall:
+
+                    // TODO: Try get status, store it
+
                     TrySetStatus(string.IsNullOrEmpty((string)_localSettings.Values["statusEmoji"]) &&
                                  string.IsNullOrEmpty((string)_localSettings.Values["statusText"])
                         ? new SlackStatus
@@ -157,7 +161,8 @@ namespace Sashimi
                     break;
 
                 case CallState.CallEnded:
-                    TrySetStatus(new SlackStatus { status_emoji = "", status_text = "" });
+                    TrySetStatus((previousStatus ?? new SlackStatus { status_emoji = "", status_text = "" }));
+                    previousStatus = null;
                     break;
 
                 default:

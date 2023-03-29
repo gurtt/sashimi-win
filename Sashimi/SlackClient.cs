@@ -13,7 +13,7 @@ namespace Sashimi;
 
 public class SlackClient
 {
-    private struct SetProfileResponse
+    private struct ProfileOperationResponse
     {
         #nullable enable
         public string ok;
@@ -105,7 +105,7 @@ public class SlackClient
     /// <summary>
     /// Sets the user status.
     /// </summary>
-    /// <param name="status">The status to set..</param>
+    /// <param name="status">The status to set.</param>
     /// <exception cref="HttpRequestException">If the HTTP request fails.</exception>
     /// <exception cref="Exception">If the HTTP request succeeds, but setting the status fails.</exception>
     public async void SetStatus(SlackStatus status)
@@ -129,11 +129,48 @@ public class SlackClient
         }
 
         httpResponseMessage.EnsureSuccessStatusCode();
-        SetProfileResponse response = JsonSerializer.Deserialize<SetProfileResponse>(await httpResponseMessage.Content.ReadAsStringAsync());
+        ProfileOperationResponse response = JsonSerializer.Deserialize<ProfileOperationResponse>(await httpResponseMessage.Content.ReadAsStringAsync());
         if (response.ok != "true")
         {
             throw new Exception(response.error);
         }
+    }
+
+    /// <summary>
+    /// Gets the user status.
+    /// </summary>
+    /// <exception cref="HttpRequestException">If the HTTP request fails.</exception>
+    /// <exception cref="Exception">If the HTTP request succeeds, but getting the status fails.</exception>
+    public async Task<string> GetStatus()
+    {
+        Uri uri = new("https://slack.com/api/users.profile.get");
+
+        HttpStringContent request = new("");
+        request.Headers["Content-type"] = "application/json; charset=utf-8";
+
+        HttpClient httpClient = new();
+        httpClient.DefaultRequestHeaders.Authorization = new HttpCredentialsHeaderValue("Bearer", _token);
+        var httpResponseMessage = await httpClient.PostAsync(uri, request);
+        
+        // TODO: Add rate-limit handling
+        //// Recursively wait if rate-limited
+        //if (httpResponseMessage.StatusCode == HttpStatusCode.TooManyRequests)
+        //{
+        //    int retryAfter = int.TryParse(httpResponseMessage.Headers["Retry-After"], out retryAfter) ? retryAfter : 10;
+        //    await Task.Delay(retryAfter).ContinueWith(_ => {
+        //        GetStatus();
+        //    });
+        //}
+
+        httpResponseMessage.EnsureSuccessStatusCode();
+        ProfileOperationResponse response = JsonSerializer.Deserialize<ProfileOperationResponse>(await httpResponseMessage.Content.ReadAsStringAsync());
+        if (response.ok != "true")
+        {
+            throw new Exception(response.error);
+        }
+
+        // TODO: Deserialise to SlackStatus
+        return response.profile;
     }
 
     /// <summary>

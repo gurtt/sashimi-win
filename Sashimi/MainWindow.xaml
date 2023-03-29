@@ -12,14 +12,31 @@
 
     <StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
         <!-- Content body -->
-        <StackPanel Padding="24" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <RelativePanel Padding="24" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+            <TextBlock x:Name="InfoTextBlock" Margin="0, 0, 0, 8">Sashimi will show this status when you're in a Teams call.</TextBlock>
+            <DropDownButton RelativePanel.Below="InfoTextBlock" x:Name="EmojiPickerButton" Margin="0, 0, 8, 0">
+                <DropDownButton.Content>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE76E;"/>
+                </DropDownButton.Content>
+                <DropDownButton.Flyout>
+                    <Flyout>
+                        <TextBox 
+                            x:Name="EmojiPickerSearchTextBox" 
+                            PlaceholderText="Search all emojis"
+                        />
+                    </Flyout>
+                </DropDownButton.Flyout>
+            </DropDownButton>
             <TextBox 
-                x:Name="MessageTextBox" 
-                Header="Add a custom emoji by typing its name between colons." 
-                PlaceholderText=":sushi: In a call"
-                KeyDown="OnKeyDownHandler" 
+                x:Name="MessageTextBox"
+                PlaceholderText="In a call"
+                KeyDown="OnKeyDownHandler"
+                Width="400"
+                RelativePanel.RightOf="EmojiPickerButton"
+                RelativePanel.Below="InfoTextBlock"
+                MaxLength="100"
             />
-        </StackPanel>
+        </RelativePanel>
 
         <StackPanel Orientation="Horizontal" Padding="24" FlowDirection="RightToLeft" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
             <Button Click="SaveButton_Click" Style="{StaticResource AccentButtonStyle}">Save</Button>

@@ -34,7 +34,7 @@ namespace Sashimi
             var windowId = Win32Interop.GetWindowIdFromWindow(hWnd);
             var appWindow = AppWindow.GetFromWindowId(windowId);
 
-   // Remove window chrome
+            // Remove window chrome
             var presenter = appWindow.Presenter as OverlappedPresenter;
             presenter!.IsMaximizable = false;
             presenter!.IsMinimizable = false;
