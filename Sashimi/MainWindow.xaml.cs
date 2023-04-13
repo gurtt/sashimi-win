@@ -56,6 +56,8 @@ namespace Sashimi
             {
                SetForegroundWindow(hWnd);
 
+                appWindow.Title = "Sashimi";
+
                // Shrink to fit content, centre position
                appWindow.Resize(new SizeInt32((int)Math.Round(Content.DesiredSize.Width),
                    (int)Math.Round(Content.DesiredSize.Height)));
