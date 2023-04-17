@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Text.Json;
@@ -123,7 +124,7 @@ public class SlackClient
 
         httpResponseMessage.EnsureSuccessStatusCode();
         JsonNode response = JsonNode.Parse(await httpResponseMessage.Content.ReadAsStringAsync())!;
-        if ((string)response["ok"] != "true")
+        if (!(bool)response["ok"])
         {
             throw new Exception((string)response["error"]);
         }
@@ -158,7 +159,7 @@ public class SlackClient
 
         httpResponseMessage.EnsureSuccessStatusCode();
         JsonNode response = JsonNode.Parse(await httpResponseMessage.Content.ReadAsStringAsync())!;
-        if ((string)response["ok"] != "true")
+        if (!(bool)response["ok"])
         {
             throw new Exception((string)response["error"]);
         }

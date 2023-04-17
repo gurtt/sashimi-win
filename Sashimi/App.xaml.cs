@@ -16,7 +16,6 @@ using Microsoft.AppCenter.Crashes;
 using Microsoft.Windows.AppLifecycle;
 using static Sashimi.SlackClient;
 using LaunchActivatedEventArgs = Microsoft.UI.Xaml.LaunchActivatedEventArgs;
-using Microsoft.UI.Xaml;
 using System.Threading.Tasks;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -31,7 +30,7 @@ namespace Sashimi
     {
         private const string ClTokenKey = "slack-access-token";
         private const string ClientId = "4228676926246.4237754035636";
-        private const string Scope = "users.profile:write";
+        private const string Scope = "users.profile:write,users.profile:read";
         private const string AnalyticsAppSecret = SecretsManager.AnalyticsAppSecret;
 
         private static SlackClient _slack;
@@ -146,7 +145,8 @@ namespace Sashimi
                     try
                     {
                     previousStatus = await _slack.GetStatus();
-                    } catch (Exception ex)
+                    } 
+                    catch (Exception ex)
                     {
                         Crashes.TrackError(ex, new Dictionary<string, string>{
                                 { "Where", "HandleCallStateChanged" },
