@@ -77,6 +77,10 @@ namespace Sashimi
                     { "Where", "OnLaunched" },
                     { "Issue", "Teams isn't installed" }
                 });
+
+                await Task.Delay(5).ContinueWith(_ => {
+                    _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.ShowContentDialog("Can't connect to Teams", "Check if Teams is installed, then restart Sashimi."); });
+                });
             }
 
             _localSettings = ApplicationData.Current.LocalSettings;
@@ -92,10 +96,6 @@ namespace Sashimi
             }
 
             Debug.WriteLine("Ready");
-
-            await Task.Delay(5).ContinueWith(_ => {
-                _mWindow.DispatcherQueue.TryEnqueue(() => { _mWindow.ShowContentDialog("Can't connect to Teams", "Check if Teams is installed, then restart Sashimi."); });
-            });
         }
 
         #region EventHandlers
