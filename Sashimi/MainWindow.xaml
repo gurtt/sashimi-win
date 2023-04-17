@@ -13,7 +13,7 @@
     <StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
         <!-- Content body -->
         <RelativePanel Padding="24" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-            <TextBlock x:Name="InfoTextBlock" Margin="0, 0, 0, 8">Sashimi will show this status when you're in a Teams call.</TextBlock>
+            <TextBlock x:Name="InfoTextBlock">Sashimi will show this status when you're in a Teams call.</TextBlock>
             <DropDownButton RelativePanel.Below="InfoTextBlock" x:Name="EmojiPickerButton" Margin="0, 0, 8, 0">
                 <DropDownButton.Content>
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE76E;"/>
