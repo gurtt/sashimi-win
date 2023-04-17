@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Windows.System;
 using Windows.Web.Http;
@@ -13,14 +14,6 @@ namespace Sashimi;
 
 public class SlackClient
 {
-    private struct ProfileOperationResponse
-    {
-        #nullable enable
-        public string ok;
-        public string? error;
-        public string? profile;
-        #nullable restore
-    }
     public struct SlackStatus
     {
         public SlackStatus(string statusEmoji, string statusText, int statusExpiration = 0)
@@ -129,11 +122,12 @@ public class SlackClient
         }
 
         httpResponseMessage.EnsureSuccessStatusCode();
-        ProfileOperationResponse response = JsonSerializer.Deserialize<ProfileOperationResponse>(await httpResponseMessage.Content.ReadAsStringAsync());
-        if (response.ok != "true")
+        JsonNode response = JsonNode.Parse(await httpResponseMessage.Content.ReadAsStringAsync())!;
+        if ((string)response["ok"] != "true")
         {
-            throw new Exception(response.error);
+            throw new Exception((string)response["error"]);
         }
+
     }
 
     /// <summary>
@@ -141,7 +135,7 @@ public class SlackClient
     /// </summary>
     /// <exception cref="HttpRequestException">If the HTTP request fails.</exception>
     /// <exception cref="Exception">If the HTTP request succeeds, but getting the status fails.</exception>
-    public async Task<string> GetStatus()
+    public async Task<SlackStatus> GetStatus()
     {
         Uri uri = new("https://slack.com/api/users.profile.get");
 
@@ -163,14 +157,17 @@ public class SlackClient
         //}
 
         httpResponseMessage.EnsureSuccessStatusCode();
-        ProfileOperationResponse response = JsonSerializer.Deserialize<ProfileOperationResponse>(await httpResponseMessage.Content.ReadAsStringAsync());
-        if (response.ok != "true")
+        JsonNode response = JsonNode.Parse(await httpResponseMessage.Content.ReadAsStringAsync())!;
+        if ((string)response["ok"] != "true")
         {
-            throw new Exception(response.error);
+            throw new Exception((string)response["error"]);
         }
 
-        // TODO: Deserialise to SlackStatus
-        return response.profile;
+        JsonNode profile = response["profile"];
+        return new SlackStatus(
+                            (string)profile["status_emoji"] ?? "",
+                            (string)profile["status_text"] ?? "",
+                            (int)profile["status_expiration"]);
     }
 
     /// <summary>
