@@ -101,7 +101,7 @@ namespace Sashimi
 
         #region EventHandlers
 
-        private static void HandleCallStateChanged(object sender, CallStateChangedEventArgs e)
+        private static async void HandleCallStateChanged(object sender, CallStateChangedEventArgs e)
         {
             if (!_slack.HasToken) return;
 
@@ -143,7 +143,16 @@ namespace Sashimi
             {
                 case CallState.InCall:
 
-                    // TODO: Try get status, store it
+                    try
+                    {
+                    previousStatus = await _slack.GetStatus();
+                    } catch (Exception ex)
+                    {
+                        Crashes.TrackError(ex, new Dictionary<string, string>{
+                                { "Where", "HandleCallStateChanged" },
+                                { "Issue", "Couldn't get status" }
+                            });
+                    }
 
                     TrySetStatus(string.IsNullOrEmpty((string)_localSettings.Values["statusEmoji"]) &&
                                  string.IsNullOrEmpty((string)_localSettings.Values["statusText"])
@@ -161,7 +170,7 @@ namespace Sashimi
                     break;
 
                 case CallState.CallEnded:
-                    TrySetStatus((previousStatus ?? new SlackStatus { status_emoji = "", status_text = "" }));
+                    TrySetStatus(previousStatus ?? new SlackStatus { status_emoji = "", status_text = "" });
                     previousStatus = null;
                     break;
 
