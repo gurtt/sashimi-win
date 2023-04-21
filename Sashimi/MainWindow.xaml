@@ -10,9 +10,14 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-	<StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
+	<Grid ColumnDefinitions="*" RowDefinitions="Auto, *, Auto" >
         <!-- Content body -->
-        <RelativePanel Padding="24" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <RelativePanel 
+            x:Name="Header" 
+            Padding="24" 
+            Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" 
+            Grid.Column="0"
+            Grid.Row="0" >
             <TextBlock x:Name="InfoTextBlock" Margin="0, 0, 0, 8">Sashimi will show this status when you're in a Teams call.</TextBlock>
             <Button RelativePanel.Below="InfoTextBlock" x:Name="EmojiPickerButton" Margin="0, 0, 8, 0">
 				<Button.Resources>
@@ -27,12 +32,18 @@
                 KeyDown="OnKeyDownHandler"
                 RelativePanel.RightOf="EmojiPickerButton"
                 RelativePanel.Below="InfoTextBlock"
+                RelativePanel.AlignRightWithPanel="True"
                 MaxLength="100"
             />
         </RelativePanel>
 
-		<StackPanel Padding="24" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-			<StackPanel.Resources>
+        <RelativePanel 
+            x:Name="EmojiDrawer" 
+            Padding="24" 
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+            Grid.Column="0"
+            Grid.Row="1" >
+            <RelativePanel.Resources>
 				<DataTemplate
 		            x:Key="EmojiTemplate"
 		            x:DataType="local:Emoji">
@@ -47,26 +58,39 @@
 						</Image.Transitions>
 					</Image>
 				</DataTemplate>
-			</StackPanel.Resources>
+			</RelativePanel.Resources>
 
 			<TextBox
                 x:Name="EmojiSearchTextBox"
                 PlaceholderText="Search all emoji"
 				Margin="0, 0, 0, 8"
 				TextChanged="EmojiSearchTextBox_TextChanged"
+                RelativePanel.AlignTopWithPanel="True"
+                RelativePanel.AlignLeftWithPanel="True"
+                RelativePanel.AlignRightWithPanel="True"
             />
 			<GridView
 				x:Name="EmojiGridView"
 				ItemTemplate="{ThemeResource EmojiTemplate}"
 				SelectionChanged="EmojiGridView_SelectionChanged"
 				SelectionMode="Single"
-				Height="250" />
-		</StackPanel>
+                HorizontalAlignment="Stretch"
+                RelativePanel.Below="EmojiSearchTextBox"
+                RelativePanel.AlignLeftWithPanel="True"
+                RelativePanel.AlignRightWithPanel="True"
+                RelativePanel.AlignBottomWithPanel="True"/>
+		</RelativePanel>
 
-        <StackPanel Orientation="Horizontal" Padding="24" FlowDirection="RightToLeft" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <StackPanel 
+            Orientation="Horizontal" 
+            Padding="24" 
+            FlowDirection="RightToLeft" 
+            Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" 
+            Grid.Column="0"
+            Grid.Row="2" >
             <Button Click="SaveButton_Click" Style="{StaticResource AccentButtonStyle}">Save</Button>
             <Button Click="CancelButton_Click"  Margin="8, 0, 0, 0">Cancel</Button>
             <HyperlinkButton x:Name="SignInOutButton" Click="SignInOutButton_Click" Margin="8, 0, 0, 0" />
         </StackPanel>
-    </StackPanel>
+    </Grid>
 </Window>

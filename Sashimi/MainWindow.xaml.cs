@@ -159,7 +159,7 @@ namespace Sashimi
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            App.SetCustomMessage(MessageTextBox.Text, SelectedEmoji.Alias ?? "");
+            App.SetCustomMessage(MessageTextBox.Text, SelectedEmoji == null ?  "" : SelectedEmoji.Alias);
             Close();
         }
 
@@ -193,6 +193,8 @@ namespace Sashimi
 
         private void EmojiSearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (!App.IsSignedIn) return;
+
             List<Emoji> TempFiltered = new(AllEmoji.Where(emoji =>
             {
                 string normalisedAlias = new((from c in emoji.Alias where char.IsLetterOrDigit(c) select c).ToArray());
