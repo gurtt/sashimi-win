@@ -10,35 +10,60 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
+	<StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
         <!-- Content body -->
         <RelativePanel Padding="24" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
             <TextBlock x:Name="InfoTextBlock" Margin="0, 0, 0, 8">Sashimi will show this status when you're in a Teams call.</TextBlock>
-            <DropDownButton RelativePanel.Below="InfoTextBlock" x:Name="EmojiPickerButton" Margin="0, 0, 8, 0">
-                <DropDownButton.Content>
-                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE76E;"/>
-                </DropDownButton.Content>
-                <DropDownButton.Flyout>
-                    <Flyout>
-                        <TextBox 
-                            x:Name="EmojiPickerSearchTextBox" 
-                            PlaceholderText="Search all emojis"
-                        />
-                    </Flyout>
-                </DropDownButton.Flyout>
-            </DropDownButton>
+            <Button RelativePanel.Below="InfoTextBlock" x:Name="EmojiPickerButton" Margin="0, 0, 8, 0">
+				<Button.Resources>
+				</Button.Resources>
+                <Button.Content>
+					<FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE76E;"/>
+                </Button.Content>
+            </Button>
             <TextBox 
                 x:Name="MessageTextBox"
                 PlaceholderText="In a call"
                 KeyDown="OnKeyDownHandler"
-                Width="400"
                 RelativePanel.RightOf="EmojiPickerButton"
                 RelativePanel.Below="InfoTextBlock"
                 MaxLength="100"
             />
         </RelativePanel>
 
-        <StackPanel Orientation="Horizontal" Padding="24" FlowDirection="RightToLeft" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+		<StackPanel Padding="24" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+			<StackPanel.Resources>
+				<DataTemplate
+		            x:Key="EmojiTemplate"
+		            x:DataType="local:Emoji">
+					<Image Stretch="Uniform" Source="{x:Bind Bitmap}" Width="32" Height="32">
+						<ToolTipService.ToolTip>
+							<ToolTip Content="{x:Bind Alias}" />
+						</ToolTipService.ToolTip>
+						<Image.Transitions>
+							<TransitionCollection>
+								<AddDeleteThemeTransition />
+							</TransitionCollection>
+						</Image.Transitions>
+					</Image>
+				</DataTemplate>
+			</StackPanel.Resources>
+
+			<TextBox
+                x:Name="EmojiSearchTextBox"
+                PlaceholderText="Search all emoji"
+				Margin="0, 0, 0, 8"
+				TextChanged="EmojiSearchTextBox_TextChanged"
+            />
+			<GridView
+				x:Name="EmojiGridView"
+				ItemTemplate="{ThemeResource EmojiTemplate}"
+				SelectionChanged="EmojiGridView_SelectionChanged"
+				SelectionMode="Single"
+				Height="250" />
+		</StackPanel>
+
+        <StackPanel Orientation="Horizontal" Padding="24" FlowDirection="RightToLeft" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
             <Button Click="SaveButton_Click" Style="{StaticResource AccentButtonStyle}">Save</Button>
             <Button Click="CancelButton_Click"  Margin="8, 0, 0, 0">Cancel</Button>
             <HyperlinkButton x:Name="SignInOutButton" Click="SignInOutButton_Click" Margin="8, 0, 0, 0" />

@@ -1,7 +1,9 @@
 ﻿
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -169,6 +171,51 @@ public class SlackClient
                             (string)profile["status_emoji"] ?? "",
                             (string)profile["status_text"] ?? "",
                             (int)profile["status_expiration"]);
+    }
+
+    /// <summary>
+    /// Gets the list of custom emojis associated with the workspace. Doesn't support aliases.
+    /// </summary>
+    /// <exception cref="HttpRequestException">If the HTTP request fails.</exception>
+    /// <exception cref="Exception">If the HTTP request succeeds, but getting the emojis fails.</exception>
+    public async Task<List<Emoji>> GetCustomEmojis()
+    {
+        Uri uri = new("https://slack.com/api/emoji.list");
+
+        HttpStringContent request = new("");
+        request.Headers["Content-type"] = "application/json; charset=utf-8";
+
+        HttpClient httpClient = new();
+        httpClient.DefaultRequestHeaders.Authorization = new HttpCredentialsHeaderValue("Bearer", _token);
+        var httpResponseMessage = await httpClient.PostAsync(uri, request);
+
+        // TODO: Add rate-limit handling
+        //// Recursively wait if rate-limited
+        //if (httpResponseMessage.StatusCode == HttpStatusCode.TooManyRequests)
+        //{
+        //    int retryAfter = int.TryParse(httpResponseMessage.Headers["Retry-After"], out retryAfter) ? retryAfter : 10;
+        //    await Task.Delay(retryAfter).ContinueWith(_ => {
+        //        GetStatus();
+        //    });
+        //}
+
+        httpResponseMessage.EnsureSuccessStatusCode();
+        JsonNode response = JsonNode.Parse(await httpResponseMessage.Content.ReadAsStringAsync())!;
+        if (!(bool)response["ok"])
+        {
+            throw new Exception((string)response["error"]);
+        }
+
+        List<Emoji> emojiList = new();
+        foreach (var customEmojiJson in response["emoji"].AsObject())
+        {
+            string alias = customEmojiJson.Key.ToString();
+            string pathString = customEmojiJson.Value.ToString();
+
+            if (pathString.StartsWith("alias:")) continue;
+            emojiList.Add(new Emoji(new(pathString), alias));
+        }
+        return emojiList;
     }
 
     /// <summary>

@@ -30,7 +30,7 @@ namespace Sashimi
     {
         private const string ClTokenKey = "slack-access-token";
         private const string ClientId = "4228676926246.4237754035636";
-        private const string Scope = "users.profile:write,users.profile:read";
+        private const string Scope = "users.profile:write,users.profile:read,emoji:read";
         private const string AnalyticsAppSecret = SecretsManager.AnalyticsAppSecret;
 
         private static SlackClient _slack;
@@ -59,6 +59,7 @@ namespace Sashimi
         {
             try
             {
+                Debug.WriteLine(CredentialLockerHelper.Get(ClTokenKey));
                 _slack = new SlackClient(ClientId, CredentialLockerHelper.Get(ClTokenKey));
             }
             catch
@@ -96,6 +97,18 @@ namespace Sashimi
             }
 
             Debug.WriteLine("Ready");
+        }
+
+        /// <summary>
+        /// Gets the custom message from storage.
+        /// </summary>
+        public static (string message, string emojiAlias) GetCustomMessage()
+        {
+            return (
+                _localSettings.Values["statusText"] == null ? "" : _localSettings.Values["statusText"].ToString(),
+                _localSettings.Values["statusEmojiAlias"] == null ? "" : _localSettings.Values["statusEmojiAlias"].ToString()
+            );
+
         }
 
         #region EventHandlers
@@ -154,7 +167,7 @@ namespace Sashimi
                             });
                     }
 
-                    TrySetStatus(string.IsNullOrEmpty((string)_localSettings.Values["statusEmoji"]) &&
+                    TrySetStatus(string.IsNullOrEmpty((string)_localSettings.Values["statusEmojiAlias"]) &&
                                  string.IsNullOrEmpty((string)_localSettings.Values["statusText"])
                         ? new SlackStatus
                         (
@@ -163,13 +176,18 @@ namespace Sashimi
                         )
                         : new SlackStatus
                         (
-                            (string)_localSettings.Values["statusEmoji"],
+                            $":{(string)_localSettings.Values["statusEmojiAlias"]}:",
                             (string)_localSettings.Values["statusText"]
                         ));
                     Analytics.TrackEvent("StartedCall");
                     break;
 
                 case CallState.CallEnded:
+
+                    // If the previous status expired while the call was active,
+                    // this will set it back even if the status should be cleared.
+                    // The Slack server will rectify this automatically when the
+                    // next minute passes.
                     TrySetStatus(previousStatus ?? new SlackStatus { status_emoji = "", status_text = "" });
                     previousStatus = null;
                     break;
@@ -260,25 +278,20 @@ namespace Sashimi
         #region UI Actions
 
         /// <summary>
-        /// Parses the custom message string and persists it to storage.
+        /// Parses the custom message and persists it to storage.
         /// </summary>
-        /// <param name="message">The message to parse.</param>
-        public static void SetCustomMessage(string message)
+        /// <param name="message">The message text.</param>
+        /// <param name="emojiAlias">The alias of the emoji.</param>
+        public static void SetCustomMessage(string message, string emojiAlias)
         {
-            const string emojiPattern = "^:(?i)[a-z]+:";
-            var emojiMatch = Regex.Match(message, emojiPattern);
+            Debug.WriteLine($"Setting status preferences with message \"{message}\" and emoji \"{emojiAlias}\"");
 
-            var statusEmoji = emojiMatch.Value;
-            var statusMessage = Regex.Replace(message, emojiPattern, String.Empty).Trim();
-
-            Debug.WriteLine($"Setting status preferences with emoji \"{statusEmoji}\" and message \"{statusMessage}\"");
-
-            _localSettings.Values["statusEmoji"] = statusEmoji;
-            _localSettings.Values["statusText"] = statusMessage;
+            _localSettings.Values["statusEmojiAlias"] = emojiAlias;
+            _localSettings.Values["statusText"] = message;
 
             Analytics.TrackEvent("SetCustomMessage", new Dictionary<string, string> {
-                { "DidUseEmoji", (!string.IsNullOrEmpty(statusEmoji)).ToString() },
-                { "DidUseMessage", (!string.IsNullOrEmpty(statusMessage)).ToString() },
+                { "DidUseEmoji", (!string.IsNullOrEmpty(emojiAlias)).ToString() },
+                { "DidUseMessage", (!string.IsNullOrEmpty(message)).ToString() },
             });
         }
 
@@ -300,7 +313,10 @@ namespace Sashimi
             {
                 CredentialLockerHelper.Remove(ClTokenKey);
                 await _slack.Deauthorise();
-                _mWindow.TriggerUiStateUpdate();
+                await _mWindow.TriggerUiStateUpdate();
+
+                _localSettings.Values["statusEmojiAlias"] = null;
+                _localSettings.Values["statusText"] = null;
             }
             catch (Exception ex)
             {
@@ -311,6 +327,11 @@ namespace Sashimi
             }
 
             Analytics.TrackEvent("SignedOut");
+        }
+
+        public static Task<List<Emoji>> GetCustomEmojis()
+        {
+            return _slack.GetCustomEmojis();
         }
 
         #endregion
